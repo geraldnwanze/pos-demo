@@ -94,7 +94,7 @@ export default function Dashboard() {
       {loading ? (
         <CardsSkeleton count={6} />
       ) : (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
           <StatCard
             title="Today's Sales"
             value={formatCurrency(metrics.todayRevenue, { decimals: false })}
@@ -141,7 +141,7 @@ export default function Dashboard() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardHeader className="flex-col items-start justify-between gap-3 space-y-0 sm:flex-row sm:items-center">
             <div>
               <CardTitle>Revenue overview</CardTitle>
               <CardDescription>Sales revenue over the selected period</CardDescription>
@@ -295,11 +295,11 @@ export default function Dashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Transaction</TableHead>
-                  <TableHead>Customer</TableHead>
+                  <TableHead className="hidden sm:table-cell">Customer</TableHead>
                   <TableHead className="hidden md:table-cell">Seller</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead className="hidden sm:table-cell">Payment</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden sm:table-cell">Status</TableHead>
                   <TableHead className="hidden lg:table-cell">Date</TableHead>
                 </TableRow>
               </TableHeader>
@@ -310,8 +310,14 @@ export default function Dashboard() {
                       <Link to={`/sales/${s.id}`} className="font-medium text-primary hover:underline">
                         {s.reference}
                       </Link>
+                      {/* on phones the customer sits under the reference to save a column */}
+                      <p className="max-w-[9rem] truncate text-xs text-muted-foreground sm:hidden">
+                        {s.customerName}
+                      </p>
                     </TableCell>
-                    <TableCell className="max-w-[140px] truncate">{s.customerName}</TableCell>
+                    <TableCell className="hidden max-w-[140px] truncate sm:table-cell">
+                      {s.customerName}
+                    </TableCell>
                     <TableCell className="hidden md:table-cell">
                       <span className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
@@ -325,11 +331,16 @@ export default function Dashboard() {
                         <span className="truncate text-sm">{sellerName(s.sellerId)}</span>
                       </span>
                     </TableCell>
-                    <TableCell className="font-medium">{formatCurrency(s.total)}</TableCell>
+                    <TableCell className="font-medium">
+                      {formatCurrency(s.total)}
+                      <div className="mt-1 sm:hidden">
+                        <StatusBadge status={s.status} withDot={false} />
+                      </div>
+                    </TableCell>
                     <TableCell className="hidden capitalize sm:table-cell">
                       <Badge variant="outline">{s.paymentMethod === 'card' ? 'POS/Card' : s.paymentMethod}</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <StatusBadge status={s.status} />
                     </TableCell>
                     <TableCell className="hidden whitespace-nowrap text-sm text-muted-foreground lg:table-cell">

@@ -1,18 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus } from 'lucide-react'
+import type { ColumnDef } from '@tanstack/react-table'
+import { ArrowLeft, History, Plus } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, CardContent } from '@/components/ui/card'
+import { DataTable } from '@/components/shared/DataTable'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   Select,
   SelectContent,
@@ -28,13 +21,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ProductImage } from '@/components/shared/ProductImage'
-import { TableSkeleton } from '@/components/shared/States'
+import { EmptyState, TableSkeleton } from '@/components/shared/States'
 import { AdjustStockDialog } from '@/components/inventory/AdjustStockDialog'
 import { useDataStore } from '@/stores/dataStore'
 import { useSimulatedLoading } from '@/hooks/useSimulatedLoading'
 import { formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import type { Product, StockMovementType } from '@/types'
+import type { Product, StockMovement, StockMovementType } from '@/types'
 
 const LABELS: Record<StockMovementType, string> = {
   STOCK_IN: 'Stock In',
@@ -64,8 +57,72 @@ export default function InventoryAdjustments() {
     [movements, typeFilter],
   )
 
-  const productName = (id: string) => products.find((p) => p.id === id)
-  const userName = (id: string) => users.find((u) => u.id === id)?.name ?? 'System'
+  const columns = useMemo<ColumnDef<StockMovement>[]>(
+    () => [
+      {
+        id: 'product',
+        header: 'Product',
+        cell: ({ row }) => {
+          const p = products.find((x) => x.id === row.original.productId)
+          return p ? (
+            <div className="flex items-center gap-2">
+              <ProductImage name={p.name} image={p.image} size="sm" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{p.name}</p>
+                <p className="text-xs text-muted-foreground">{p.sku}</p>
+              </div>
+            </div>
+          ) : (
+            <span className="text-muted-foreground">Unknown</span>
+          )
+        },
+      },
+      {
+        accessorKey: 'type',
+        header: 'Type',
+        cell: ({ row }) => <Badge variant="outline">{LABELS[row.original.type]}</Badge>,
+      },
+      {
+        accessorKey: 'quantity',
+        header: 'Quantity',
+        cell: ({ row }) => (
+          <span
+            className={cn(
+              'font-medium',
+              row.original.quantity >= 0 ? 'text-success' : 'text-destructive',
+            )}
+          >
+            {row.original.quantity >= 0 ? '+' : ''}
+            {row.original.quantity}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'reference',
+        header: 'Reference',
+        cell: ({ row }) => <span className="text-sm">{row.original.reference}</span>,
+      },
+      {
+        id: 'user',
+        header: 'User',
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {users.find((u) => u.id === row.original.userId)?.name ?? 'System'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'createdAt',
+        header: 'Date',
+        cell: ({ row }) => (
+          <span className="whitespace-nowrap text-sm text-muted-foreground">
+            {formatDateTime(row.original.createdAt)}
+          </span>
+        ),
+      },
+    ],
+    [products, users],
+  )
 
   return (
     <div className="space-y-6">
@@ -82,84 +139,37 @@ export default function InventoryAdjustments() {
         }
       />
 
-      <div className="flex justify-end">
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Movement type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All movements</SelectItem>
-            <SelectItem value="STOCK_IN">Stock In</SelectItem>
-            <SelectItem value="ADJUSTMENT">Adjustment</SelectItem>
-            <SelectItem value="SALE">Sales</SelectItem>
-            <SelectItem value="PURCHASE">Purchases</SelectItem>
-            <SelectItem value="RETURN">Returns</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       {loading ? (
         <TableSkeleton rows={8} cols={5} />
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>User</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((m) => {
-                  const p = productName(m.productId)
-                  return (
-                    <TableRow key={m.id}>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                        {formatDateTime(m.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        {p ? (
-                          <div className="flex items-center gap-2">
-                            <ProductImage name={p.name} image={p.image} size="sm" />
-                            <div>
-                              <p className="text-sm font-medium">{p.name}</p>
-                              <p className="text-xs text-muted-foreground">{p.sku}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">Unknown</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{LABELS[m.type]}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={cn(
-                            'font-medium',
-                            m.quantity >= 0 ? 'text-success' : 'text-destructive',
-                          )}
-                        >
-                          {m.quantity >= 0 ? '+' : ''}
-                          {m.quantity}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm">{m.reference}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {userName(m.userId)}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <DataTable
+          columns={columns}
+          data={filtered}
+          searchKey="reference"
+          searchPlaceholder="Search by reference…"
+          toolbar={
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Movement type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All movements</SelectItem>
+                <SelectItem value="STOCK_IN">Stock In</SelectItem>
+                <SelectItem value="ADJUSTMENT">Adjustment</SelectItem>
+                <SelectItem value="SALE">Sales</SelectItem>
+                <SelectItem value="PURCHASE">Purchases</SelectItem>
+                <SelectItem value="RETURN">Returns</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+          emptyState={
+            <EmptyState
+              icon={History}
+              title="No movements found"
+              description="Try a different movement type."
+            />
+          }
+        />
       )}
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>

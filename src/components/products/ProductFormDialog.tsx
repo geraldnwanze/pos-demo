@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
@@ -129,8 +128,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0">
-        <DialogHeader className="border-b p-6">
+      <DialogContent className="flex max-w-2xl flex-col gap-0 overflow-hidden p-0">
+        <DialogHeader className="shrink-0 border-b p-4 pr-10 sm:p-6">
           <DialogTitle>{isEdit ? 'Edit product' : 'Add new product'}</DialogTitle>
           <DialogDescription>
             {isEdit
@@ -138,9 +137,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
               : 'Fill in the details to add a product to your catalog.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <ScrollArea className="max-h-[65vh]">
-            <div className="grid gap-4 p-6 sm:grid-cols-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label>Product name</Label>
                 <Input placeholder="e.g. Coca Cola 50cl" {...register('name')} />
@@ -247,8 +246,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 />
               </div>
             </div>
-          </ScrollArea>
-          <DialogFooter className="border-t p-6">
+          </div>
+          <DialogFooter className="shrink-0 border-t p-4 sm:p-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>

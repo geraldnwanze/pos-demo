@@ -24,7 +24,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { useDataStore } from '@/stores/dataStore'
 import { useAuth } from '@/hooks/useAuth'
@@ -193,13 +192,13 @@ export default function Purchases() {
       )}
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-2xl p-0">
-          <DialogHeader className="border-b p-6">
+        <DialogContent className="flex max-w-2xl flex-col gap-0 overflow-hidden p-0">
+          <DialogHeader className="shrink-0 border-b p-4 pr-10 sm:p-6">
             <DialogTitle>New purchase order</DialogTitle>
             <DialogDescription>Order stock from a supplier.</DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[65vh]">
-            <div className="space-y-4 p-6">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="space-y-4 p-4 sm:p-6">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>Supplier</Label>
@@ -274,12 +273,12 @@ export default function Purchases() {
               {items.length > 0 && (
                 <div className="space-y-2 rounded-lg border p-3">
                   {items.map((i) => (
-                    <div key={i.productId} className="flex items-center gap-2">
-                      <div className="min-w-0 flex-1">
+                    <div key={i.productId} className="flex flex-wrap items-center gap-2">
+                      <div className="order-1 min-w-0 basis-[calc(100%-2.5rem)] sm:order-none sm:flex-1 sm:basis-0">
                         <p className="truncate text-sm font-medium">{i.name}</p>
                         <p className="text-xs text-muted-foreground">{i.sku}</p>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="order-3 flex items-center gap-1 sm:order-none">
                         <Label className="text-xs text-muted-foreground">Qty</Label>
                         <Input
                           type="number"
@@ -291,7 +290,7 @@ export default function Purchases() {
                           className="w-16"
                         />
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="order-4 flex items-center gap-1 sm:order-none">
                         <Label className="text-xs text-muted-foreground">Cost</Label>
                         <Input
                           type="number"
@@ -302,12 +301,13 @@ export default function Purchases() {
                           className="w-24"
                         />
                       </div>
-                      <span className="w-24 text-right text-sm font-medium">
+                      <span className="order-5 ml-auto text-right text-sm font-medium sm:order-none sm:ml-0 sm:w-24">
                         {formatCurrency(i.lineTotal, { decimals: false })}
                       </span>
                       <Button
                         variant="ghost"
                         size="icon-sm"
+                        className="order-2 sm:order-none"
                         onClick={() =>
                           setItems((prev) => prev.filter((x) => x.productId !== i.productId))
                         }
@@ -323,8 +323,8 @@ export default function Purchases() {
                 </div>
               )}
             </div>
-          </ScrollArea>
-          <DialogFooter className="border-t p-6">
+          </div>
+          <DialogFooter className="shrink-0 border-t p-4 sm:p-6">
             <Button variant="outline" onClick={() => setFormOpen(false)}>
               Cancel
             </Button>

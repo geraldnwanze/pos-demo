@@ -257,22 +257,22 @@ function ProductPerformance({ sales, products }: { sales: Sale[]; products: Prod
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
-                  <TableHead>Units sold</TableHead>
+                  <TableHead className="hidden sm:table-cell">Units sold</TableHead>
                   <TableHead>Revenue</TableHead>
                   <TableHead>Profit</TableHead>
-                  <TableHead>Margin</TableHead>
+                  <TableHead className="hidden sm:table-cell">Margin</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((r) => (
                   <TableRow key={r.productId}>
                     <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell>{formatNumber(r.units)}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{formatNumber(r.units)}</TableCell>
                     <TableCell>{formatCurrency(r.revenue, { decimals: false })}</TableCell>
                     <TableCell className="text-success">
                       {formatCurrency(r.profit, { decimals: false })}
                     </TableCell>
-                    <TableCell>{formatPercent(r.margin)}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{formatPercent(r.margin)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -334,8 +334,8 @@ function SellerPerformance({ sales, users }: { sales: Sale[]; users: User[] }) {
                 <TableHead>Seller</TableHead>
                 <TableHead>Transactions</TableHead>
                 <TableHead>Revenue</TableHead>
-                <TableHead>Avg. sale</TableHead>
-                <TableHead>Refunds</TableHead>
+                <TableHead className="hidden sm:table-cell">Avg. sale</TableHead>
+                <TableHead className="hidden sm:table-cell">Refunds</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -344,8 +344,8 @@ function SellerPerformance({ sales, users }: { sales: Sale[]; users: User[] }) {
                   <TableCell className="font-medium">{r.name}</TableCell>
                   <TableCell>{formatNumber(r.transactions)}</TableCell>
                   <TableCell>{formatCurrency(r.revenue, { decimals: false })}</TableCell>
-                  <TableCell>{formatCurrency(r.avg, { decimals: false })}</TableCell>
-                  <TableCell>{r.refunds}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{formatCurrency(r.avg, { decimals: false })}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{r.refunds}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

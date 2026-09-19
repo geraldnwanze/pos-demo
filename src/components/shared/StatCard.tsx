@@ -15,24 +15,23 @@ interface StatCardProps {
 export function StatCard({ title, value, icon: Icon, iconClassName, trend, hint }: StatCardProps) {
   const positive = (trend?.value ?? 0) >= 0
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold tracking-tight">{value}</p>
-          </div>
+    <Card className="min-w-0">
+      <CardContent className="p-4 sm:p-5">
+        {/* Title + icon share a row; the value gets the full card width below */}
+        <div className="flex items-start justify-between gap-2">
+          <p className="min-w-0 text-sm font-medium leading-snug text-muted-foreground">{title}</p>
           <div
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary',
+              'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary sm:h-10 sm:w-10',
               iconClassName,
             )}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
         </div>
+        <p className="mt-1.5 break-words text-xl font-bold tracking-tight sm:text-2xl">{value}</p>
         {(trend || hint) && (
-          <div className="mt-3 flex items-center gap-1.5 text-xs">
+          <div className="mt-2 flex flex-wrap items-center gap-x-1.5 text-xs">
             {trend && (
               <span
                 className={cn(

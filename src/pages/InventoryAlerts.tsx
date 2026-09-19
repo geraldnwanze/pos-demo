@@ -1,24 +1,23 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, SlidersHorizontal, Eye, ClipboardList, CheckCircle2 } from 'lucide-react'
-import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import type { ColumnDef } from '@tanstack/react-table'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ArrowLeft,
+  SlidersHorizontal,
+  Eye,
+  ClipboardList,
+  CheckCircle2,
+  MoreHorizontal,
+} from 'lucide-react'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { DataTable } from '@/components/shared/DataTable'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreHorizontal } from 'lucide-react'
 import { ProductImage } from '@/components/shared/ProductImage'
 import { StatusBadge, stockStatus } from '@/components/shared/StatusBadge'
 import { EmptyState, TableSkeleton } from '@/components/shared/States'
@@ -34,11 +33,92 @@ export default function InventoryAlerts() {
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
   const canManage = hasPermission('inventory.manage')
+  const canPurchase = hasPermission('purchases.manage')
   const products = useDataStore((s) => s.products)
   const [adjusting, setAdjusting] = useState<Product | undefined>()
   const [adjustOpen, setAdjustOpen] = useState(false)
 
   const low = useMemo(() => lowStockProducts(products), [products])
+
+  const columns = useMemo<ColumnDef<Product>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Product',
+        cell: ({ row }) => (
+          <div className="flex items-center gap-3">
+            <ProductImage name={row.original.name} image={row.original.image} />
+            <div className="min-w-0">
+              <p className="truncate font-medium">{row.original.name}</p>
+              <p className="text-xs text-muted-foreground">{row.original.sku}</p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'stock',
+        header: 'Current',
+        cell: ({ row }) => <span className="font-medium">{row.original.stock}</span>,
+      },
+      {
+        accessorKey: 'minStock',
+        header: 'Minimum',
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.minStock}</span>,
+      },
+      {
+        id: 'difference',
+        header: 'Difference',
+        cell: ({ row }) => (
+          <span className="font-medium text-destructive">
+            {row.original.stock - row.original.minStock}
+          </span>
+        ),
+      },
+      {
+        id: 'status',
+        header: 'Status',
+        cell: ({ row }) => (
+          <StatusBadge status={stockStatus(row.original.stock, row.original.minStock)} />
+        ),
+      },
+      {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canManage && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setAdjusting(row.original)
+                      setAdjustOpen(true)
+                    }}
+                  >
+                    <SlidersHorizontal className="h-4 w-4" /> Adjust stock
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => navigate(`/products/${row.original.id}`)}>
+                  <Eye className="h-4 w-4" /> View product
+                </DropdownMenuItem>
+                {canPurchase && (
+                  <DropdownMenuItem onClick={() => navigate('/purchases')}>
+                    <ClipboardList className="h-4 w-4" /> Create purchase
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ),
+      },
+    ],
+    [canManage, canPurchase, navigate],
+  )
 
   return (
     <div className="space-y-6">
@@ -64,77 +144,7 @@ export default function InventoryAlerts() {
           }
         />
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Current</TableHead>
-                  <TableHead>Minimum</TableHead>
-                  <TableHead>Difference</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {low.map((p) => {
-                  const diff = p.stock - p.minStock
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <ProductImage name={p.name} image={p.image} />
-                          <div>
-                            <p className="font-medium">{p.name}</p>
-                            <p className="text-xs text-muted-foreground">{p.sku}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{p.stock}</TableCell>
-                      <TableCell className="text-muted-foreground">{p.minStock}</TableCell>
-                      <TableCell>
-                        <span className="font-medium text-destructive">{diff}</span>
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={stockStatus(p.stock, p.minStock)} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {canManage && (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setAdjusting(p)
-                                  setAdjustOpen(true)
-                                }}
-                              >
-                                <SlidersHorizontal className="h-4 w-4" /> Adjust stock
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => navigate(`/products/${p.id}`)}>
-                              <Eye className="h-4 w-4" /> View product
-                            </DropdownMenuItem>
-                            {hasPermission('purchases.manage') && (
-                              <DropdownMenuItem onClick={() => navigate('/purchases')}>
-                                <ClipboardList className="h-4 w-4" /> Create purchase
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <DataTable columns={columns} data={low} />
       )}
 
       <AdjustStockDialog open={adjustOpen} onOpenChange={setAdjustOpen} product={adjusting} />

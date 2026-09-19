@@ -34,6 +34,13 @@ interface DataTableProps<TData, TValue> {
   pageSize?: number
 }
 
+const isActions = (columnId: string) => columnId === 'actions'
+const stop = (e: React.MouseEvent) => e.stopPropagation()
+
+function columnLabel(header: unknown, fallback: string): string {
+  return typeof header === 'string' ? header : fallback
+}
+
 export function DataTable<TData, TValue>({
   columns,
   data,
@@ -83,7 +90,8 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      <Card className="overflow-hidden">
+      {/* Desktop / large tablet: full table */}
+      <Card className="hidden overflow-hidden lg:block">
         <Table>
           <TableHeader className="bg-muted/40">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -120,7 +128,13 @@ export function DataTable<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {isActions(cell.column.id) ? (
+                        <div onClick={stop}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </div>
+                      ) : (
+                        flexRender(cell.column.columnDef.cell, cell.getContext())
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -140,8 +154,62 @@ export function DataTable<TData, TValue>({
         </Table>
       </Card>
 
+      {/* Phones / tablets: each row becomes a card, so nothing needs sideways scrolling */}
+      <div className="space-y-3 lg:hidden">
+        {rows.length ? (
+          rows.map((row) => {
+            const cells = row.getVisibleCells()
+            const [primary, ...rest] = cells.filter((c) => !isActions(c.column.id))
+            const actions = cells.find((c) => isActions(c.column.id))
+            return (
+              <div
+                key={row.id}
+                onClick={() => onRowClick?.(row.original)}
+                className={cn(
+                  'rounded-lg border bg-card p-3 shadow-sm',
+                  onRowClick && 'cursor-pointer active:bg-muted/50',
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    {primary && flexRender(primary.column.columnDef.cell, primary.getContext())}
+                  </div>
+                  {actions && (
+                    <div className="shrink-0" onClick={stop}>
+                      {flexRender(actions.column.columnDef.cell, actions.getContext())}
+                    </div>
+                  )}
+                </div>
+                {rest.length > 0 && (
+                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t pt-3 text-sm sm:grid-cols-3">
+                    {rest.map((cell) => (
+                      <div key={cell.id} className="min-w-0">
+                        <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                          {columnLabel(cell.column.columnDef.header, cell.column.id)}
+                        </dt>
+                        <dd className="mt-0.5 break-words">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </div>
+            )
+          })
+        ) : (
+          <div className="rounded-lg border bg-card">
+            {emptyState ?? (
+              <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+                No results found.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {rows.length} of {table.getFilteredRowModel().rows.length} results
           </p>
