@@ -201,7 +201,7 @@ export default function Suppliers() {
               <Input {...register('name')} />
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Contact person</Label>
                 <Input {...register('contactPerson')} />

@@ -246,7 +246,7 @@ export default function Expenses() {
       {loading ? (
         <CardsSkeleton count={3} />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard
             title="Total expenses"
             value={formatCurrency(summary.total, { decimals: false })}
@@ -302,7 +302,7 @@ export default function Expenses() {
               <Input placeholder="e.g. Generator diesel" {...register('title')} />
               {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Category</Label>
                 <Select value={watch('category')} onValueChange={(v) => setValue('category', v as ExpenseCategory)}>
@@ -324,7 +324,7 @@ export default function Expenses() {
                 {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Payment method</Label>
                 <Select

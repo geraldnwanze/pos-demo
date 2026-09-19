@@ -70,7 +70,7 @@ export default function CustomerDetails() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card>
           <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
             <Avatar className="h-20 w-20 text-xl">
@@ -95,7 +95,7 @@ export default function CustomerDetails() {
         </Card>
 
         <div className="space-y-6 lg:col-span-2">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <MiniStat icon={Coins} label="Total spent" value={formatCurrency(customer.totalSpent, { decimals: false })} tone="emerald" />
             <MiniStat icon={ShoppingBag} label="Transactions" value={String(customer.transactionCount)} tone="blue" />
             <MiniStat icon={Receipt} label="Avg. order" value={formatCurrency(avg, { decimals: false })} tone="violet" />
@@ -115,10 +115,10 @@ export default function CustomerDetails() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Transaction</TableHead>
-                      <TableHead>Items</TableHead>
+                      <TableHead className="hidden sm:table-cell">Items</TableHead>
                       <TableHead>Total</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
+                      <TableHead className="hidden sm:table-cell">Status</TableHead>
+                      <TableHead className="hidden sm:table-cell">Date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -128,13 +128,23 @@ export default function CustomerDetails() {
                         className="cursor-pointer"
                         onClick={() => navigate(`/sales/${s.id}`)}
                       >
-                        <TableCell className="font-medium text-primary">{s.reference}</TableCell>
-                        <TableCell>{s.items.reduce((a, i) => a + i.quantity, 0)}</TableCell>
-                        <TableCell className="font-medium">{formatCurrency(s.total)}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium text-primary">
+                          {s.reference}
+                          <p className="mt-0.5 text-xs font-normal text-muted-foreground sm:hidden">
+                            {formatDateTime(s.createdAt)}
+                          </p>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">{s.items.reduce((a, i) => a + i.quantity, 0)}</TableCell>
+                        <TableCell className="font-medium">
+                          {formatCurrency(s.total)}
+                          <div className="mt-1 sm:hidden">
+                            <StatusBadge status={s.status} withDot={false} />
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <StatusBadge status={s.status} />
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                        <TableCell className="hidden sm:table-cell whitespace-nowrap text-sm text-muted-foreground">
                           {formatDateTime(s.createdAt)}
                         </TableCell>
                       </TableRow>

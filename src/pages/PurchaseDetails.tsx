@@ -90,7 +90,7 @@ export default function PurchaseDetails() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle>Items</CardTitle>
@@ -102,7 +102,7 @@ export default function PurchaseDetails() {
                 <TableRow>
                   <TableHead>Product</TableHead>
                   <TableHead>Quantity</TableHead>
-                  <TableHead>Cost price</TableHead>
+                  <TableHead className="hidden sm:table-cell">Cost price</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                 </TableRow>
               </TableHeader>
@@ -112,9 +112,12 @@ export default function PurchaseDetails() {
                     <TableCell>
                       <p className="font-medium">{i.name}</p>
                       <p className="text-xs text-muted-foreground">{i.sku}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground sm:hidden">
+                        @ {formatCurrency(i.costPrice)}
+                      </p>
                     </TableCell>
                     <TableCell>{i.quantity}</TableCell>
-                    <TableCell>{formatCurrency(i.costPrice)}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{formatCurrency(i.costPrice)}</TableCell>
                     <TableCell className="text-right font-medium">
                       {formatCurrency(i.lineTotal)}
                     </TableCell>

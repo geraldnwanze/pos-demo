@@ -139,7 +139,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6">
+            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-6">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label>Product name</Label>
                 <Input placeholder="e.g. Coca Cola 50cl" {...register('name')} />

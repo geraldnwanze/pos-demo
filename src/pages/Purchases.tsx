@@ -199,7 +199,7 @@ export default function Purchases() {
           </DialogHeader>
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="space-y-4 p-4 sm:p-6">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>Supplier</Label>
                   <Select value={supplierId} onValueChange={setSupplierId}>

@@ -100,7 +100,7 @@ export default function SaleDetails() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle>Items</CardTitle>
@@ -112,7 +112,7 @@ export default function SaleDetails() {
                 <TableRow>
                   <TableHead>Product</TableHead>
                   <TableHead>Qty</TableHead>
-                  <TableHead>Unit price</TableHead>
+                  <TableHead className="hidden sm:table-cell">Unit price</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                 </TableRow>
               </TableHeader>
@@ -122,6 +122,9 @@ export default function SaleDetails() {
                     <TableCell>
                       <p className="font-medium">{item.name}</p>
                       <p className="text-xs text-muted-foreground">{item.sku}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground sm:hidden">
+                        @ {formatCurrency(item.unitPrice)}
+                      </p>
                       {(item.refundedQty ?? 0) > 0 && (
                         <Badge variant="warning" className="mt-1">
                           {item.refundedQty} refunded
@@ -129,7 +132,7 @@ export default function SaleDetails() {
                       )}
                     </TableCell>
                     <TableCell>{item.quantity}</TableCell>
-                    <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{formatCurrency(item.unitPrice)}</TableCell>
                     <TableCell className="text-right font-medium">
                       {formatCurrency(item.unitPrice * item.quantity)}
                     </TableCell>

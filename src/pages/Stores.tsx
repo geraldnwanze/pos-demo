@@ -222,7 +222,7 @@ export default function Stores() {
             <DialogDescription>Branch details and manager assignment.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Store name</Label>
                 <Input {...register('name')} />
@@ -239,7 +239,7 @@ export default function Stores() {
               <Textarea {...register('address')} />
               {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Phone</Label>
                 <Input {...register('phone')} />

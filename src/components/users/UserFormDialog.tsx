@@ -120,7 +120,7 @@ export function UserFormDialog({
             <Input placeholder="e.g. Tunde Bakare" {...register('name')} />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Email</Label>
               <Input type="email" placeholder="name@example.com" {...register('email')} />
@@ -132,7 +132,7 @@ export function UserFormDialog({
               {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Role</Label>
               <Select

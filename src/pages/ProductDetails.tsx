@@ -104,7 +104,7 @@ export default function ProductDetails() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
             <ProductImage name={product.name} image={product.image} size="xl" />
@@ -134,7 +134,7 @@ export default function ProductDetails() {
         </Card>
 
         <div className="space-y-6 lg:col-span-2">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <MiniStat icon={Boxes} label="Current stock" value={formatNumber(product.stock)} tone="blue" />
             <MiniStat icon={TrendingUp} label="Units sold" value={formatNumber(product.unitsSold)} tone="emerald" />
             <MiniStat
@@ -162,15 +162,17 @@ export default function ProductDetails() {
                       <TableHead>Date</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Quantity</TableHead>
-                      <TableHead>Reference</TableHead>
-                      <TableHead>User</TableHead>
+                      <TableHead className="hidden sm:table-cell">Reference</TableHead>
+                      <TableHead className="hidden sm:table-cell">User</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {history.map((m) => (
                       <TableRow key={m.id}>
-                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                        <TableCell className="text-sm text-muted-foreground sm:whitespace-nowrap">
                           {formatDateTime(m.createdAt)}
+                          {/* on phones the reference sits under the date to save a column */}
+                          <p className="mt-0.5 text-xs text-foreground sm:hidden">{m.reference}</p>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{MOVEMENT_LABELS[m.type]}</Badge>
@@ -186,8 +188,8 @@ export default function ProductDetails() {
                             {m.quantity}
                           </span>
                         </TableCell>
-                        <TableCell className="text-sm">{m.reference}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="hidden sm:table-cell text-sm">{m.reference}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                           {userName(m.userId)}
                         </TableCell>
                       </TableRow>

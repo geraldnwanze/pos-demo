@@ -157,7 +157,7 @@ function SalesReport({ sales, from, to }: { sales: Sale[]; from: string; to: str
 
   return (
     <div className="mt-4 space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard title="Gross sales" value={formatCurrency(gross, { decimals: false })} icon={Banknote} />
         <StatCard title="Discounts" value={formatCurrency(discounts, { decimals: false })} icon={Percent} iconClassName="bg-amber-100 text-amber-700" />
         <StatCard title="Tax" value={formatCurrency(tax, { decimals: false })} icon={Receipt} iconClassName="bg-violet-100 text-violet-700" />
@@ -165,7 +165,7 @@ function SalesReport({ sales, from, to }: { sales: Sale[]; from: string; to: str
         <StatCard title="Transactions" value={formatNumber(active.length)} icon={Receipt} iconClassName="bg-blue-100 text-blue-700" />
         <StatCard title="Avg. transaction" value={formatCurrency(active.length ? collected / active.length : 0, { decimals: false })} icon={Coins} iconClassName="bg-cyan-100 text-cyan-700" />
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Revenue trend</CardTitle>
@@ -199,13 +199,13 @@ function InventoryReport({ products, movementsCount }: { products: Product[]; mo
 
   return (
     <div className="mt-4 space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Inventory value (cost)" value={formatCurrency(value.cost, { decimals: false })} icon={Coins} iconClassName="bg-emerald-100 text-emerald-700" />
         <StatCard title="Retail value" value={formatCurrency(value.retail, { decimals: false })} icon={Banknote} />
         <StatCard title="Low stock" value={formatNumber(low)} icon={AlertTriangle} iconClassName="bg-amber-100 text-amber-700" />
         <StatCard title="Out of stock" value={formatNumber(out)} icon={PackageX} iconClassName="bg-rose-100 text-rose-700" />
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Top products by stock value</CardTitle>
@@ -366,12 +366,12 @@ function ExpenseReport({ expenses }: { expenses: Expense[] }) {
 
   return (
     <div className="mt-4 space-y-6">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard title="Total expenses" value={formatCurrency(total, { decimals: false })} icon={Coins} iconClassName="bg-rose-100 text-rose-700" />
         <StatCard title="Categories" value={String(byCategory.length)} icon={Receipt} />
         <StatCard title="Records" value={String(expenses.length)} icon={Boxes} />
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Expenses by category</CardTitle>
