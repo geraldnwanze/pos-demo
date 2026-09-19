@@ -193,25 +193,23 @@ export default function Pos() {
           />
         </div>
 
-        <ScrollArea className="w-full whitespace-nowrap">
-          <div className="flex gap-2 pb-2">
-            <CategoryChip
-              active={activeCategory === 'all'}
-              onClick={() => setActiveCategory('all')}
-              label="All"
-            />
-            {categories
-              .filter((c) => c.status === 'active')
-              .map((c) => (
-                <CategoryChip
-                  key={c.id}
-                  active={activeCategory === c.id}
-                  onClick={() => setActiveCategory(c.id)}
-                  label={c.name}
-                />
-              ))}
-          </div>
-        </ScrollArea>
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <CategoryChip
+            active={activeCategory === 'all'}
+            onClick={() => setActiveCategory('all')}
+            label="All"
+          />
+          {categories
+            .filter((c) => c.status === 'active')
+            .map((c) => (
+              <CategoryChip
+                key={c.id}
+                active={activeCategory === c.id}
+                onClick={() => setActiveCategory(c.id)}
+                label={c.name}
+              />
+            ))}
+        </div>
 
         {filteredProducts.length === 0 ? (
           <EmptyState
