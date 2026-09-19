@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Search,
   Plus,
@@ -6,12 +6,9 @@ import {
   Trash2,
   ShoppingCart,
   UserPlus,
-  CheckCircle2,
   Banknote,
   CreditCard,
   Landmark,
-  Printer,
-  Download,
   PackageX,
   X,
 } from 'lucide-react'
@@ -27,12 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { ProductImage } from '@/components/shared/ProductImage'
 import { EmptyState } from '@/components/shared/States'
 import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog'
-import { Receipt } from '@/components/pos/Receipt'
+import { ReceiptDialog } from '@/components/pos/ReceiptDialog'
 import { useDataStore } from '@/stores/dataStore'
 import { useCartStore, useActiveCart, cartItemCount } from '@/stores/cartStore'
 import { useAuth } from '@/hooks/useAuth'
@@ -53,8 +48,6 @@ export default function Pos() {
   const categories = useDataStore((s) => s.categories)
   const customers = useDataStore((s) => s.customers)
   const posSettings = useDataStore((s) => s.posSettings)
-  const business = useDataStore((s) => s.businessSettings)
-  const users = useDataStore((s) => s.users)
   const createSale = useDataStore((s) => s.createSale)
 
   const cart = useActiveCart()
@@ -71,7 +64,6 @@ export default function Pos() {
   const switchCart = useCartStore((s) => s.switchCart)
   const closeCart = useCartStore((s) => s.closeCart)
   const finishActive = useCartStore((s) => s.finishActive)
-  const receiptRef = useRef<HTMLDivElement>(null)
 
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
@@ -174,23 +166,6 @@ export default function Pos() {
     setCompletedSale(sale)
     finishActive()
     setAmountPaid('')
-  }
-
-  const seller = completedSale ? users.find((u) => u.id === completedSale.sellerId) : undefined
-
-  const handlePrint = () => window.print()
-
-  const handleDownload = () => {
-    if (!receiptRef.current) return
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${completedSale?.reference}</title><script src="https://cdn.tailwindcss.com"></script></head><body style="font-family:ui-sans-serif,system-ui">${receiptRef.current.outerHTML}</body></html>`
-    const blob = new Blob([html], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `receipt-${completedSale?.reference}.html`
-    a.click()
-    URL.revokeObjectURL(url)
-    toast.success('Receipt downloaded.')
   }
 
   const cartInner = (
@@ -519,46 +494,11 @@ export default function Pos() {
         onSuccess={(c) => setCustomer(c.id)}
       />
 
-      {/* Success / Receipt dialog */}
-      <Dialog open={!!completedSale} onOpenChange={(o) => !o && setCompletedSale(null)}>
-        <DialogContent className="max-w-md p-0" hideClose>
-          {completedSale && (
-            <div>
-              <div className="flex flex-col items-center gap-2 border-b bg-success/5 p-6 text-center no-print">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
-                  <CheckCircle2 className="h-8 w-8" />
-                </div>
-                <h3 className="text-lg font-bold">Sale completed!</h3>
-                <p className="text-sm text-muted-foreground">
-                  {completedSale.reference} · {formatCurrency(completedSale.total)}
-                </p>
-              </div>
-              <ScrollArea className="max-h-[50vh]">
-                <div className="bg-muted/30 p-4">
-                  <Receipt
-                    ref={receiptRef}
-                    sale={completedSale}
-                    business={business}
-                    seller={seller}
-                    footer={posSettings.receiptFooter}
-                  />
-                </div>
-              </ScrollArea>
-              <div className="grid grid-cols-3 gap-2 border-t p-4 no-print">
-                <Button variant="outline" onClick={handlePrint}>
-                  <Printer className="h-4 w-4" /> Print
-                </Button>
-                <Button variant="outline" onClick={handleDownload}>
-                  <Download className="h-4 w-4" /> Download
-                </Button>
-                <Button onClick={() => setCompletedSale(null)}>
-                  <Plus className="h-4 w-4" /> New Sale
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ReceiptDialog
+        sale={completedSale}
+        variant="success"
+        onOpenChange={(open) => !open && setCompletedSale(null)}
+      />
     </div>
   )
 }

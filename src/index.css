@@ -128,6 +128,18 @@
     top: 0;
     width: 100%;
   }
+  /* The receipt lives in a fixed, transformed, height-capped dialog on screen;
+     flatten those wrappers so the whole receipt prints, not just the visible part. */
+  [role='dialog'] {
+    position: static !important;
+    transform: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .print-visible {
+    overflow: visible !important;
+    max-height: none !important;
+  }
   .no-print {
     display: none !important;
   }

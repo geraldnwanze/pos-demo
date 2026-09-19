@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, RotateCcw, Printer, Download, Receipt as ReceiptIcon } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Receipt as ReceiptIcon } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,9 +15,8 @@ import {
 } from '@/components/ui/table'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/States'
-import { Receipt } from '@/components/pos/Receipt'
+import { ReceiptDialog } from '@/components/pos/ReceiptDialog'
 import { RefundDialog } from '@/components/sales/RefundDialog'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useDataStore } from '@/stores/dataStore'
 import { useAuth } from '@/hooks/useAuth'
 import { formatCurrency, formatDateTime } from '@/lib/format'
@@ -35,12 +34,9 @@ export default function SaleDetails() {
   const sales = useDataStore((s) => s.sales)
   const users = useDataStore((s) => s.users)
   const customers = useDataStore((s) => s.customers)
-  const business = useDataStore((s) => s.businessSettings)
-  const posSettings = useDataStore((s) => s.posSettings)
 
   const [refundOpen, setRefundOpen] = useState(false)
   const [receiptOpen, setReceiptOpen] = useState(false)
-  const receiptRef = useRef<HTMLDivElement>(null)
 
   const sale = sales.find((s) => s.id === id)
 
@@ -81,25 +77,6 @@ export default function SaleDetails() {
     hasPermission('sales.refund') && (sale.status === 'completed' || sale.status === 'partially_refunded')
   const backTo = hasPermission('sales.view') ? '/sales' : '/my-sales'
 
-  const handlePrint = () => {
-    setReceiptOpen(true)
-    setTimeout(() => window.print(), 200)
-  }
-  const handleDownload = () => {
-    if (!receiptRef.current) {
-      setReceiptOpen(true)
-      return
-    }
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${sale.reference}</title><script src="https://cdn.tailwindcss.com"></script></head><body>${receiptRef.current.outerHTML}</body></html>`
-    const blob = new Blob([html], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `receipt-${sale.reference}.html`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   return (
     <div className="space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate(backTo)} className="-ml-2">
@@ -113,9 +90,6 @@ export default function SaleDetails() {
           <>
             <Button variant="outline" onClick={() => setReceiptOpen(true)}>
               <ReceiptIcon className="h-4 w-4" /> Receipt
-            </Button>
-            <Button variant="outline" onClick={handleDownload}>
-              <Download className="h-4 w-4" /> Download
             </Button>
             {canRefund && (
               <Button variant="destructive" onClick={() => setRefundOpen(true)}>
@@ -226,30 +200,7 @@ export default function SaleDetails() {
 
       {canRefund && <RefundDialog open={refundOpen} onOpenChange={setRefundOpen} sale={sale} />}
 
-      <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
-        <DialogContent className="max-w-md p-0">
-          <DialogHeader className="border-b p-4 no-print">
-            <DialogTitle>Receipt</DialogTitle>
-          </DialogHeader>
-          <div className="bg-muted/30 p-4">
-            <Receipt
-              ref={receiptRef}
-              sale={sale}
-              business={business}
-              seller={seller}
-              footer={posSettings.receiptFooter}
-            />
-          </div>
-          <div className="flex gap-2 border-t p-4 no-print">
-            <Button variant="outline" className="flex-1" onClick={handlePrint}>
-              <Printer className="h-4 w-4" /> Print
-            </Button>
-            <Button className="flex-1" onClick={handleDownload}>
-              <Download className="h-4 w-4" /> Download
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ReceiptDialog sale={receiptOpen ? sale : null} onOpenChange={setReceiptOpen} />
     </div>
   )
 }
