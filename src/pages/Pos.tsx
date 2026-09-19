@@ -180,9 +180,9 @@ export default function Pos() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_400px]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
       {/* Product area */}
-      <div className="flex flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -220,7 +220,7 @@ export default function Pos() {
             description="Try a different search term or category."
           />
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
             {filteredProducts.map((p) => {
               const out = p.stock <= 0 && !posSettings.allowNegativeInventory
               return (
@@ -256,7 +256,7 @@ export default function Pos() {
       </div>
 
       {/* Cart panel */}
-      <Card className="flex h-[calc(100vh-7rem)] flex-col lg:sticky lg:top-20">
+      <Card className="flex h-[75vh] min-w-0 flex-col lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
         <div className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
