@@ -1,0 +1,14 @@
+import type { Customer } from '@/types'
+
+export const customers: Customer[] = [
+  { id: 'cust-1', name: 'Adaeze Uche', phone: '+234 803 111 2222', email: 'adaeze@example.com', address: '12 Bourdillon Rd, Ikoyi, Lagos', status: 'active', totalSpent: 486500, transactionCount: 42, lastPurchase: '2026-09-18T14:20:00.000Z', createdAt: '2023-04-11T08:00:00.000Z' },
+  { id: 'cust-2', name: 'Ibrahim Musa', phone: '+234 806 222 3333', email: 'ibrahim@example.com', address: '5 Ahmadu Bello Way, Kaduna', status: 'active', totalSpent: 254000, transactionCount: 27, lastPurchase: '2026-09-19T09:05:00.000Z', createdAt: '2023-06-02T08:00:00.000Z' },
+  { id: 'cust-3', name: 'Chinelo Okeke', phone: '+234 809 333 4444', email: 'chinelo@example.com', address: '20 New Haven, Enugu', status: 'active', totalSpent: 128900, transactionCount: 18, lastPurchase: '2026-09-15T11:40:00.000Z', createdAt: '2023-07-19T08:00:00.000Z' },
+  { id: 'cust-4', name: 'Oluwaseun Ajayi', phone: '+234 810 444 5555', email: 'seun@example.com', address: '7 Ring Road, Ibadan', status: 'active', totalSpent: 812300, transactionCount: 63, lastPurchase: '2026-09-19T08:30:00.000Z', createdAt: '2023-03-25T08:00:00.000Z' },
+  { id: 'cust-5', name: 'Grace Etim', phone: '+234 812 555 6666', email: 'grace@example.com', address: '31 Marian Rd, Calabar', status: 'active', totalSpent: 96500, transactionCount: 14, lastPurchase: '2026-09-10T16:10:00.000Z', createdAt: '2023-09-01T08:00:00.000Z' },
+  { id: 'cust-6', name: 'Yusuf Abdullahi', phone: '+234 814 666 7777', email: 'yusuf@example.com', address: '3 Zoo Rd, Kano', status: 'active', totalSpent: 342000, transactionCount: 31, lastPurchase: '2026-09-17T13:25:00.000Z', createdAt: '2023-05-14T08:00:00.000Z' },
+  { id: 'cust-7', name: 'Blessing Nnamdi', phone: '+234 815 777 8888', email: 'blessing.n@example.com', address: '18 Okpanam Rd, Asaba', status: 'active', totalSpent: 57800, transactionCount: 9, lastPurchase: '2026-09-05T10:00:00.000Z', createdAt: '2024-01-20T08:00:00.000Z' },
+  { id: 'cust-8', name: 'Daniel Peters', phone: '+234 816 888 9999', email: 'daniel@example.com', address: '9 Aggrey Rd, Port Harcourt', status: 'active', totalSpent: 189200, transactionCount: 22, lastPurchase: '2026-09-16T15:45:00.000Z', createdAt: '2023-08-08T08:00:00.000Z' },
+  { id: 'cust-9', name: 'Halima Yakubu', phone: '+234 817 999 0000', email: 'halima@example.com', address: '2 Post Office Rd, Maiduguri', status: 'inactive', totalSpent: 41200, transactionCount: 6, lastPurchase: '2026-07-22T09:30:00.000Z', createdAt: '2024-03-02T08:00:00.000Z' },
+  { id: 'cust-10', name: 'Victor Obi', phone: '+234 818 100 1010', email: 'victor@example.com', address: '44 Chime Ave, Enugu', status: 'active', totalSpent: 233400, transactionCount: 25, lastPurchase: '2026-09-18T18:00:00.000Z', createdAt: '2023-10-30T08:00:00.000Z' },
+]
