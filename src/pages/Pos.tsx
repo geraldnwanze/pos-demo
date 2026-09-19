@@ -294,7 +294,7 @@ export default function Pos() {
         </div>
 
         {/* Cart lines */}
-        <ScrollArea className="flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {lines.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 px-6 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -348,7 +348,7 @@ export default function Pos() {
               ))}
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         {/* Totals & checkout */}
         {lines.length > 0 && (
