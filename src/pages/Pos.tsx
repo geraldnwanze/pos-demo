@@ -13,6 +13,7 @@ import {
   Printer,
   Download,
   PackageX,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
@@ -33,7 +34,7 @@ import { EmptyState } from '@/components/shared/States'
 import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog'
 import { Receipt } from '@/components/pos/Receipt'
 import { useDataStore } from '@/stores/dataStore'
-import { useCartStore } from '@/stores/cartStore'
+import { useCartStore, useActiveCart, cartItemCount } from '@/stores/cartStore'
 import { useAuth } from '@/hooks/useAuth'
 import { computeSaleTotals, money } from '@/lib/sales'
 import { formatCurrency } from '@/lib/format'
@@ -56,7 +57,20 @@ export default function Pos() {
   const users = useDataStore((s) => s.users)
   const createSale = useDataStore((s) => s.createSale)
 
-  const cart = useCartStore()
+  const cart = useActiveCart()
+  const carts = useCartStore((s) => s.carts)
+  const addItem = useCartStore((s) => s.addItem)
+  const removeItem = useCartStore((s) => s.removeItem)
+  const increment = useCartStore((s) => s.increment)
+  const decrement = useCartStore((s) => s.decrement)
+  const setCustomer = useCartStore((s) => s.setCustomer)
+  const setDiscount = useCartStore((s) => s.setDiscount)
+  const setPaymentMethod = useCartStore((s) => s.setPaymentMethod)
+  const clearActive = useCartStore((s) => s.clearActive)
+  const newCart = useCartStore((s) => s.newCart)
+  const switchCart = useCartStore((s) => s.switchCart)
+  const closeCart = useCartStore((s) => s.closeCart)
+  const finishActive = useCartStore((s) => s.finishActive)
   const receiptRef = useRef<HTMLDivElement>(null)
 
   const [search, setSearch] = useState('')
@@ -99,7 +113,7 @@ export default function Pos() {
   const handleAddProduct = (productId: string) => {
     const product = products.find((p) => p.id === productId)
     if (!product) return
-    const result = cart.addItem(
+    const result = addItem(
       {
         productId: product.id,
         name: product.name,
@@ -158,7 +172,7 @@ export default function Pos() {
 
     toast.success('Sale completed successfully.')
     setCompletedSale(sale)
-    cart.clear()
+    finishActive()
     setAmountPaid('')
   }
 
@@ -255,14 +269,66 @@ export default function Pos() {
 
       {/* Cart panel */}
       <Card className="flex h-[75vh] min-w-0 flex-col lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
+        {/* Order tabs — hold multiple sales at once */}
+        <div className="flex items-center gap-1 border-b p-2">
+          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {carts.map((c, i) => {
+              const label = customers.find((cu) => cu.id === c.customerId)?.name ?? `Order ${i + 1}`
+              const count = cartItemCount(c)
+              const active = c.id === cart.id
+              return (
+                <div
+                  key={c.id}
+                  className={cn(
+                    'flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
+                    active ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-accent',
+                  )}
+                >
+                  <button className="max-w-[110px] truncate" onClick={() => switchCart(c.id)}>
+                    {label}
+                    {count > 0 && (
+                      <span
+                        className={cn(
+                          'ml-1.5 rounded-full px-1.5 py-0.5 text-[10px]',
+                          active ? 'bg-primary text-primary-foreground' : 'bg-muted',
+                        )}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                  {carts.length > 1 && (
+                    <button
+                      onClick={() => closeCart(c.id)}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Close order"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            className="shrink-0"
+            onClick={newCart}
+            title="Start a new order"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
         <div className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
             <span className="font-semibold">Current Sale</span>
-            {cart.totalItems() > 0 && <Badge>{cart.totalItems()}</Badge>}
+            {cartItemCount(cart) > 0 && <Badge>{cartItemCount(cart)}</Badge>}
           </div>
           {lines.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => cart.clear()}>
+            <Button variant="ghost" size="sm" onClick={clearActive}>
               <Trash2 className="h-4 w-4" /> Clear
             </Button>
           )}
@@ -272,7 +338,7 @@ export default function Pos() {
         <div className="flex items-center gap-2 border-b p-4">
           <Select
             value={cart.customerId ?? 'walk-in'}
-            onValueChange={(v) => cart.setCustomer(v === 'walk-in' ? null : v)}
+            onValueChange={(v) => setCustomer(v === 'walk-in' ? null : v)}
           >
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Select customer" />
@@ -320,7 +386,7 @@ export default function Pos() {
                     <Button
                       variant="outline"
                       size="icon-sm"
-                      onClick={() => cart.decrement(l.productId)}
+                      onClick={() => decrement(l.productId)}
                     >
                       <Minus className="h-3 w-3" />
                     </Button>
@@ -328,7 +394,7 @@ export default function Pos() {
                     <Button
                       variant="outline"
                       size="icon-sm"
-                      onClick={() => cart.increment(l.productId, posSettings.allowNegativeInventory)}
+                      onClick={() => increment(l.productId, posSettings.allowNegativeInventory)}
                     >
                       <Plus className="h-3 w-3" />
                     </Button>
@@ -338,7 +404,7 @@ export default function Pos() {
                       {formatCurrency(l.unitPrice * l.quantity, { decimals: false })}
                     </p>
                     <button
-                      onClick={() => cart.removeItem(l.productId)}
+                      onClick={() => removeItem(l.productId)}
                       className="text-xs text-destructive hover:underline"
                     >
                       Remove
@@ -357,7 +423,7 @@ export default function Pos() {
               <div className="flex items-center gap-2">
                 <Select
                   value={cart.discountType}
-                  onValueChange={(v) => cart.setDiscount(v as DiscountType, cart.discountValue)}
+                  onValueChange={(v) => setDiscount(v as DiscountType, cart.discountValue)}
                 >
                   <SelectTrigger className="w-28">
                     <SelectValue />
@@ -371,7 +437,7 @@ export default function Pos() {
                   type="number"
                   min={0}
                   value={cart.discountValue || ''}
-                  onChange={(e) => cart.setDiscount(cart.discountType, Number(e.target.value))}
+                  onChange={(e) => setDiscount(cart.discountType, Number(e.target.value))}
                   placeholder="Discount"
                   className="flex-1"
                 />
@@ -407,7 +473,7 @@ export default function Pos() {
               {PAYMENT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
-                  onClick={() => cart.setPaymentMethod(opt.value)}
+                  onClick={() => setPaymentMethod(opt.value)}
                   className={cn(
                     'flex flex-col items-center gap-1 rounded-md border py-2 text-xs font-medium transition-colors',
                     cart.paymentMethod === opt.value
@@ -448,7 +514,7 @@ export default function Pos() {
       <CustomerFormDialog
         open={addCustomerOpen}
         onOpenChange={setAddCustomerOpen}
-        onSuccess={(c) => cart.setCustomer(c.id)}
+        onSuccess={(c) => setCustomer(c.id)}
       />
 
       {/* Success / Receipt dialog */}

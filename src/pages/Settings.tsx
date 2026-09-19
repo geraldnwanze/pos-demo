@@ -58,7 +58,7 @@ export default function Settings() {
   const updatePos = useDataStore((s) => s.updatePosSettings)
   const updateUser = useDataStore((s) => s.updateUser)
   const resetDemo = useDataStore((s) => s.resetDemo)
-  const clearCart = useCartStore((s) => s.clear)
+  const clearCart = useCartStore((s) => s.clearActive)
 
   const [resetOpen, setResetOpen] = useState(false)
 
