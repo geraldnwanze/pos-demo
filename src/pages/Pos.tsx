@@ -193,6 +193,247 @@ export default function Pos() {
     toast.success('Receipt downloaded.')
   }
 
+  const cartInner = (
+    <>
+      {/* Order tabs — hold multiple sales at once */}
+      <div className="flex items-center gap-1 border-b p-2">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {carts.map((c, i) => {
+            const label = customers.find((cu) => cu.id === c.customerId)?.name ?? `Order ${i + 1}`
+            const count = cartItemCount(c)
+            const active = c.id === cart.id
+            return (
+              <div
+                key={c.id}
+                className={cn(
+                  'flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
+                  active ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-accent',
+                )}
+              >
+                <button className="max-w-[110px] truncate" onClick={() => switchCart(c.id)}>
+                  {label}
+                  {count > 0 && (
+                    <span
+                      className={cn(
+                        'ml-1.5 rounded-full px-1.5 py-0.5 text-[10px]',
+                        active ? 'bg-primary text-primary-foreground' : 'bg-muted',
+                      )}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+                {carts.length > 1 && (
+                  <button
+                    onClick={() => closeCart(c.id)}
+                    className="text-muted-foreground hover:text-destructive"
+                    aria-label="Close order"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          className="shrink-0"
+          onClick={newCart}
+          title="Start a new order"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="flex items-center justify-between border-b p-4">
+        <div className="flex items-center gap-2">
+          <ShoppingCart className="h-5 w-5" />
+          <span className="font-semibold">Current Sale</span>
+          {cartItemCount(cart) > 0 && <Badge>{cartItemCount(cart)}</Badge>}
+        </div>
+        {lines.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={clearActive}>
+            <Trash2 className="h-4 w-4" /> Clear
+          </Button>
+        )}
+      </div>
+
+      {/* Customer selector */}
+      <div className="flex items-center gap-2 border-b p-4">
+        <Select
+          value={cart.customerId ?? 'walk-in'}
+          onValueChange={(v) => setCustomer(v === 'walk-in' ? null : v)}
+        >
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="Select customer" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="walk-in">Walk-in Customer</SelectItem>
+            {customers
+              .filter((c) => c.status === 'active')
+              .map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="icon" onClick={() => setAddCustomerOpen(true)}>
+          <UserPlus className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Cart lines */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {lines.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <ShoppingCart className="h-7 w-7" />
+            </div>
+            <p className="text-sm font-medium">Cart is empty</p>
+            <p className="text-xs text-muted-foreground">
+              Tap products to add them to the sale.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {lines.map((l) => (
+              <div key={l.productId} className="flex items-center gap-3 p-3">
+                <ProductImage name={l.name} image={l.image} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{l.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(l.unitPrice, { decimals: false })} each
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon-sm" onClick={() => decrement(l.productId)}>
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="w-7 text-center text-sm font-medium">{l.quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={() => increment(l.productId, posSettings.allowNegativeInventory)}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="w-20 text-right">
+                  <p className="text-sm font-semibold">
+                    {formatCurrency(l.unitPrice * l.quantity, { decimals: false })}
+                  </p>
+                  <button
+                    onClick={() => removeItem(l.productId)}
+                    className="text-xs text-destructive hover:underline"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Totals & checkout */}
+      {lines.length > 0 && (
+        <div className="space-y-3 border-t p-4">
+          {posSettings.enableDiscounts && (
+            <div className="flex items-center gap-2">
+              <Select
+                value={cart.discountType}
+                onValueChange={(v) => setDiscount(v as DiscountType, cart.discountValue)}
+              >
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage">% Off</SelectItem>
+                  <SelectItem value="fixed">₦ Off</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                min={0}
+                value={cart.discountValue || ''}
+                onChange={(e) => setDiscount(cart.discountType, Number(e.target.value))}
+                placeholder="Discount"
+                className="flex-1"
+              />
+            </div>
+          )}
+          {discountExceeds && (
+            <p className="text-xs text-destructive">Discount cannot exceed the subtotal.</p>
+          )}
+
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{formatCurrency(totals.subtotal)}</span>
+            </div>
+            {totals.discountAmount > 0 && (
+              <div className="flex justify-between text-success">
+                <span>Discount</span>
+                <span>-{formatCurrency(totals.discountAmount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Tax</span>
+              <span>{formatCurrency(totals.tax)}</span>
+            </div>
+            <div className="flex justify-between border-t pt-1.5 text-base font-bold">
+              <span>Total</span>
+              <span>{formatCurrency(totals.total)}</span>
+            </div>
+          </div>
+
+          {/* Payment methods */}
+          <div className="grid grid-cols-3 gap-2">
+            {PAYMENT_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setPaymentMethod(opt.value)}
+                className={cn(
+                  'flex flex-col items-center gap-1 rounded-md border py-2 text-xs font-medium transition-colors',
+                  cart.paymentMethod === opt.value
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'hover:bg-accent',
+                )}
+              >
+                <opt.icon className="h-4 w-4" />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {cart.paymentMethod === 'cash' && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={amountPaid}
+                onChange={(e) => setAmountPaid(e.target.value)}
+                placeholder="Cash received"
+                className="flex-1"
+              />
+              {amountPaid && Number(amountPaid) >= totals.total && (
+                <span className="whitespace-nowrap text-sm text-muted-foreground">
+                  Change: {formatCurrency(Number(amountPaid) - totals.total)}
+                </span>
+              )}
+            </div>
+          )}
+
+          <Button size="lg" className="w-full" onClick={handleCompleteSale}>
+            Complete Sale · {formatCurrency(totals.total)}
+          </Button>
+        </div>
+      )}
+    </>
+  )
+
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
       {/* Product area */}
@@ -267,248 +508,9 @@ export default function Pos() {
         )}
       </div>
 
-      {/* Cart panel */}
-      <Card className="flex h-[75vh] min-w-0 flex-col lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
-        {/* Order tabs — hold multiple sales at once */}
-        <div className="flex items-center gap-1 border-b p-2">
-          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {carts.map((c, i) => {
-              const label = customers.find((cu) => cu.id === c.customerId)?.name ?? `Order ${i + 1}`
-              const count = cartItemCount(c)
-              const active = c.id === cart.id
-              return (
-                <div
-                  key={c.id}
-                  className={cn(
-                    'flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
-                    active ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-accent',
-                  )}
-                >
-                  <button className="max-w-[110px] truncate" onClick={() => switchCart(c.id)}>
-                    {label}
-                    {count > 0 && (
-                      <span
-                        className={cn(
-                          'ml-1.5 rounded-full px-1.5 py-0.5 text-[10px]',
-                          active ? 'bg-primary text-primary-foreground' : 'bg-muted',
-                        )}
-                      >
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                  {carts.length > 1 && (
-                    <button
-                      onClick={() => closeCart(c.id)}
-                      className="text-muted-foreground hover:text-destructive"
-                      aria-label="Close order"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="shrink-0"
-            onClick={newCart}
-            title="Start a new order"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="flex items-center justify-between border-b p-4">
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
-            <span className="font-semibold">Current Sale</span>
-            {cartItemCount(cart) > 0 && <Badge>{cartItemCount(cart)}</Badge>}
-          </div>
-          {lines.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearActive}>
-              <Trash2 className="h-4 w-4" /> Clear
-            </Button>
-          )}
-        </div>
-
-        {/* Customer selector */}
-        <div className="flex items-center gap-2 border-b p-4">
-          <Select
-            value={cart.customerId ?? 'walk-in'}
-            onValueChange={(v) => setCustomer(v === 'walk-in' ? null : v)}
-          >
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Select customer" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="walk-in">Walk-in Customer</SelectItem>
-              {customers
-                .filter((c) => c.status === 'active')
-                .map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="icon" onClick={() => setAddCustomerOpen(true)}>
-            <UserPlus className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Cart lines */}
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {lines.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-2 px-6 py-16 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                <ShoppingCart className="h-7 w-7" />
-              </div>
-              <p className="text-sm font-medium">Cart is empty</p>
-              <p className="text-xs text-muted-foreground">
-                Click products on the left to add them to the sale.
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {lines.map((l) => (
-                <div key={l.productId} className="flex items-center gap-3 p-3">
-                  <ProductImage name={l.name} image={l.image} size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{l.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatCurrency(l.unitPrice, { decimals: false })} each
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={() => decrement(l.productId)}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="w-7 text-center text-sm font-medium">{l.quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={() => increment(l.productId, posSettings.allowNegativeInventory)}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="w-20 text-right">
-                    <p className="text-sm font-semibold">
-                      {formatCurrency(l.unitPrice * l.quantity, { decimals: false })}
-                    </p>
-                    <button
-                      onClick={() => removeItem(l.productId)}
-                      className="text-xs text-destructive hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Totals & checkout */}
-        {lines.length > 0 && (
-          <div className="space-y-3 border-t p-4">
-            {posSettings.enableDiscounts && (
-              <div className="flex items-center gap-2">
-                <Select
-                  value={cart.discountType}
-                  onValueChange={(v) => setDiscount(v as DiscountType, cart.discountValue)}
-                >
-                  <SelectTrigger className="w-28">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="percentage">% Off</SelectItem>
-                    <SelectItem value="fixed">₦ Off</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  type="number"
-                  min={0}
-                  value={cart.discountValue || ''}
-                  onChange={(e) => setDiscount(cart.discountType, Number(e.target.value))}
-                  placeholder="Discount"
-                  className="flex-1"
-                />
-              </div>
-            )}
-            {discountExceeds && (
-              <p className="text-xs text-destructive">Discount cannot exceed the subtotal.</p>
-            )}
-
-            <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatCurrency(totals.subtotal)}</span>
-              </div>
-              {totals.discountAmount > 0 && (
-                <div className="flex justify-between text-success">
-                  <span>Discount</span>
-                  <span>-{formatCurrency(totals.discountAmount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Tax</span>
-                <span>{formatCurrency(totals.tax)}</span>
-              </div>
-              <div className="flex justify-between border-t pt-1.5 text-base font-bold">
-                <span>Total</span>
-                <span>{formatCurrency(totals.total)}</span>
-              </div>
-            </div>
-
-            {/* Payment methods */}
-            <div className="grid grid-cols-3 gap-2">
-              {PAYMENT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setPaymentMethod(opt.value)}
-                  className={cn(
-                    'flex flex-col items-center gap-1 rounded-md border py-2 text-xs font-medium transition-colors',
-                    cart.paymentMethod === opt.value
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'hover:bg-accent',
-                  )}
-                >
-                  <opt.icon className="h-4 w-4" />
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-
-            {cart.paymentMethod === 'cash' && (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  value={amountPaid}
-                  onChange={(e) => setAmountPaid(e.target.value)}
-                  placeholder="Cash received"
-                  className="flex-1"
-                />
-                {amountPaid && Number(amountPaid) >= totals.total && (
-                  <span className="whitespace-nowrap text-sm text-muted-foreground">
-                    Change: {formatCurrency(Number(amountPaid) - totals.total)}
-                  </span>
-                )}
-              </div>
-            )}
-
-            <Button size="lg" className="w-full" onClick={handleCompleteSale}>
-              Complete Sale · {formatCurrency(totals.total)}
-            </Button>
-          </div>
-        )}
+      {/* Cart panel — first on mobile, right column on desktop */}
+      <Card className="order-first flex max-h-[80vh] min-w-0 flex-col lg:sticky lg:top-20 lg:order-none lg:h-[calc(100vh-7rem)] lg:max-h-none">
+        {cartInner}
       </Card>
 
       <CustomerFormDialog
