@@ -76,7 +76,7 @@ export default function Sales() {
       {
         accessorKey: 'customerName',
         header: 'Customer',
-        cell: ({ row }) => <span className="max-w-[140px] truncate">{row.original.customerName}</span>,
+        cell: ({ row }) => <span className="block max-w-[140px] truncate">{row.original.customerName}</span>,
       },
       {
         accessorKey: 'sellerId',
@@ -132,7 +132,7 @@ export default function Sales() {
       {loading ? (
         <CardsSkeleton count={4} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard title="Transactions" value={formatNumber(summary.count)} icon={Hash} />
           <StatCard
             title="Net revenue"

@@ -162,7 +162,7 @@ export default function Inventory() {
       {loading ? (
         <CardsSkeleton count={4} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard title="Total products" value={formatNumber(products.length)} icon={Boxes} />
           <StatCard
             title="Inventory value (cost)"

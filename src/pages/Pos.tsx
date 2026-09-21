@@ -448,7 +448,7 @@ export default function Pos() {
             description="Try a different search term or category."
           />
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {filteredProducts.map((p) => {
               const out = p.stock <= 0 && !posSettings.allowNegativeInventory
               return (
@@ -468,8 +468,8 @@ export default function Pos() {
                     {p.name}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{p.sku}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-sm font-bold text-primary">
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-1">
+                    <span className="whitespace-nowrap text-sm font-bold text-primary">
                       {formatCurrency(p.sellingPrice, { decimals: false })}
                     </span>
                     <Badge variant={out ? 'destructive' : p.stock <= p.minStock ? 'warning' : 'secondary'}>

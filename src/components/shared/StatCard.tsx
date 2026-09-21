@@ -29,7 +29,7 @@ export function StatCard({ title, value, icon: Icon, iconClassName, trend, hint 
             <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
         </div>
-        <p className="mt-1.5 break-words text-xl font-bold tracking-tight sm:text-2xl">{value}</p>
+        <p className="mt-1.5 whitespace-nowrap text-xl font-bold tracking-tight max-[359px]:text-base sm:text-2xl">{value}</p>
         {(trend || hint) && (
           <div className="mt-2 flex flex-wrap items-center gap-x-1.5 text-xs">
             {trend && (

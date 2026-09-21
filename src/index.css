@@ -96,6 +96,14 @@
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
     -webkit-font-smoothing: antialiased;
+    /* Safety net: long unbroken strings (emails, SKUs, URLs) wrap instead of
+       forcing a grid/flex track — and the whole page — wider than the screen. */
+    overflow-wrap: anywhere;
+  }
+  /* Tables keep normal word breaking so figures never split mid-number; if a
+     table is ever wider than its card it scrolls inside the card, not the page. */
+  table {
+    overflow-wrap: normal;
   }
   ::-webkit-scrollbar {
     width: 8px;

@@ -104,8 +104,8 @@ export default function ProductDetails() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <Card className="min-w-0">
           <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
             <ProductImage name={product.name} image={product.image} size="xl" />
             <div>
@@ -120,10 +120,10 @@ export default function ProductDetails() {
               <Row label="Barcode" value={product.barcode || '—'} />
               <Row label="Category" value={category} />
               <Row label="Supplier" value={supplier} />
-              <Row label="Cost price" value={formatCurrency(product.costPrice)} />
-              <Row label="Selling price" value={formatCurrency(product.sellingPrice)} />
-              <Row label="Tax rate" value={`${product.taxRate}%`} />
-              <Row label="Min stock" value={String(product.minStock)} />
+              <Row label="Cost price" value={formatCurrency(product.costPrice)} nowrap />
+              <Row label="Selling price" value={formatCurrency(product.sellingPrice)} nowrap />
+              <Row label="Tax rate" value={`${product.taxRate}%`} nowrap />
+              <Row label="Min stock" value={String(product.minStock)} nowrap />
             </div>
             {product.description && (
               <p className="w-full border-t pt-3 text-left text-sm text-muted-foreground">
@@ -133,8 +133,8 @@ export default function ProductDetails() {
           </CardContent>
         </Card>
 
-        <div className="space-y-6 lg:col-span-2">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="min-w-0 space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
             <MiniStat icon={Boxes} label="Current stock" value={formatNumber(product.stock)} tone="blue" />
             <MiniStat icon={TrendingUp} label="Units sold" value={formatNumber(product.unitsSold)} tone="emerald" />
             <MiniStat
@@ -162,17 +162,17 @@ export default function ProductDetails() {
                       <TableHead>Date</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Quantity</TableHead>
-                      <TableHead className="hidden sm:table-cell">Reference</TableHead>
-                      <TableHead className="hidden sm:table-cell">User</TableHead>
+                      <TableHead className="hidden xl:table-cell">Reference</TableHead>
+                      <TableHead className="hidden xl:table-cell">User</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {history.map((m) => (
                       <TableRow key={m.id}>
-                        <TableCell className="text-sm text-muted-foreground sm:whitespace-nowrap">
+                        <TableCell className="text-sm text-muted-foreground xl:whitespace-nowrap">
                           {formatDateTime(m.createdAt)}
                           {/* on phones the reference sits under the date to save a column */}
-                          <p className="mt-0.5 text-xs text-foreground sm:hidden">{m.reference}</p>
+                          <p className="mt-0.5 text-xs text-foreground xl:hidden">{m.reference}</p>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{MOVEMENT_LABELS[m.type]}</Badge>
@@ -188,8 +188,8 @@ export default function ProductDetails() {
                             {m.quantity}
                           </span>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell text-sm">{m.reference}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                        <TableCell className="hidden xl:table-cell text-sm">{m.reference}</TableCell>
+                        <TableCell className="hidden xl:table-cell text-sm text-muted-foreground">
                           {userName(m.userId)}
                         </TableCell>
                       </TableRow>
@@ -208,11 +208,11 @@ export default function ProductDetails() {
   )
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, nowrap }: { label: string; value: string; nowrap?: boolean }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
+      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <span className={cn('min-w-0 text-right font-medium', nowrap && 'whitespace-nowrap')}>{value}</span>
     </div>
   )
 }
@@ -243,7 +243,7 @@ function MiniStat({
         </div>
         <div>
           <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-lg font-bold">{value}</p>
+          <p className="whitespace-nowrap text-lg font-bold">{value}</p>
         </div>
       </CardContent>
     </Card>

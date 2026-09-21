@@ -95,7 +95,7 @@ export default function CustomerDetails() {
         </Card>
 
         <div className="space-y-6 lg:col-span-2">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
             <MiniStat icon={Coins} label="Total spent" value={formatCurrency(customer.totalSpent, { decimals: false })} tone="emerald" />
             <MiniStat icon={ShoppingBag} label="Transactions" value={String(customer.transactionCount)} tone="blue" />
             <MiniStat icon={Receipt} label="Avg. order" value={formatCurrency(avg, { decimals: false })} tone="violet" />
@@ -115,10 +115,10 @@ export default function CustomerDetails() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Transaction</TableHead>
-                      <TableHead className="hidden sm:table-cell">Items</TableHead>
+                      <TableHead className="hidden xl:table-cell">Items</TableHead>
                       <TableHead>Total</TableHead>
-                      <TableHead className="hidden sm:table-cell">Status</TableHead>
-                      <TableHead className="hidden sm:table-cell">Date</TableHead>
+                      <TableHead className="hidden xl:table-cell">Status</TableHead>
+                      <TableHead className="hidden xl:table-cell">Date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -130,21 +130,21 @@ export default function CustomerDetails() {
                       >
                         <TableCell className="font-medium text-primary">
                           {s.reference}
-                          <p className="mt-0.5 text-xs font-normal text-muted-foreground sm:hidden">
+                          <p className="mt-0.5 text-xs font-normal text-muted-foreground xl:hidden">
                             {formatDateTime(s.createdAt)}
                           </p>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">{s.items.reduce((a, i) => a + i.quantity, 0)}</TableCell>
+                        <TableCell className="hidden xl:table-cell">{s.items.reduce((a, i) => a + i.quantity, 0)}</TableCell>
                         <TableCell className="font-medium">
                           {formatCurrency(s.total)}
-                          <div className="mt-1 sm:hidden">
+                          <div className="mt-1 xl:hidden">
                             <StatusBadge status={s.status} withDot={false} />
                           </div>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">
+                        <TableCell className="hidden xl:table-cell">
                           <StatusBadge status={s.status} />
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell whitespace-nowrap text-sm text-muted-foreground">
+                        <TableCell className="hidden xl:table-cell whitespace-nowrap text-sm text-muted-foreground">
                           {formatDateTime(s.createdAt)}
                         </TableCell>
                       </TableRow>
@@ -187,7 +187,7 @@ function MiniStat({
         </div>
         <div>
           <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-lg font-bold">{value}</p>
+          <p className="whitespace-nowrap text-lg font-bold">{value}</p>
         </div>
       </CardContent>
     </Card>

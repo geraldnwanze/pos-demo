@@ -90,8 +90,8 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      {/* Desktop / large tablet: full table */}
-      <Card className="hidden overflow-hidden lg:block">
+      {/* Wide screens (≥1280px): full table */}
+      <Card className="hidden overflow-hidden xl:block">
         <Table>
           <TableHeader className="bg-muted/40">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -154,8 +154,8 @@ export function DataTable<TData, TValue>({
         </Table>
       </Card>
 
-      {/* Phones / tablets: each row becomes a card, so nothing needs sideways scrolling */}
-      <div className="space-y-3 lg:hidden">
+      {/* Phones, tablets and small laptops: each row becomes a card, so nothing needs sideways scrolling */}
+      <div className="space-y-3 md:grid md:grid-cols-2 md:items-start md:gap-3 md:space-y-0 xl:hidden">
         {rows.length ? (
           rows.map((row) => {
             const cells = row.getVisibleCells()
@@ -166,7 +166,7 @@ export function DataTable<TData, TValue>({
                 key={row.id}
                 onClick={() => onRowClick?.(row.original)}
                 className={cn(
-                  'rounded-lg border bg-card p-3 shadow-sm',
+                  'min-w-0 rounded-lg border bg-card p-3 shadow-sm',
                   onRowClick && 'cursor-pointer active:bg-muted/50',
                 )}
               >
@@ -181,7 +181,7 @@ export function DataTable<TData, TValue>({
                   )}
                 </div>
                 {rest.length > 0 && (
-                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t pt-3 text-sm sm:grid-cols-3">
+                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t pt-3 text-sm">
                     {rest.map((cell) => (
                       <div key={cell.id} className="min-w-0">
                         <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -198,7 +198,7 @@ export function DataTable<TData, TValue>({
             )
           })
         ) : (
-          <div className="rounded-lg border bg-card">
+          <div className="rounded-lg border bg-card md:col-span-2">
             {emptyState ?? (
               <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
                 No results found.

@@ -101,7 +101,10 @@ export default function PurchaseDetails() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
-                  <TableHead>Quantity</TableHead>
+                  <TableHead>
+                    <span className="sm:hidden">Qty</span>
+                    <span className="hidden sm:inline">Quantity</span>
+                  </TableHead>
                   <TableHead className="hidden sm:table-cell">Cost price</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                 </TableRow>

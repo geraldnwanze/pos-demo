@@ -157,7 +157,7 @@ function SalesReport({ sales, from, to }: { sales: Sale[]; from: string; to: str
 
   return (
     <div className="mt-4 space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <StatCard title="Gross sales" value={formatCurrency(gross, { decimals: false })} icon={Banknote} />
         <StatCard title="Discounts" value={formatCurrency(discounts, { decimals: false })} icon={Percent} iconClassName="bg-amber-100 text-amber-700" />
         <StatCard title="Tax" value={formatCurrency(tax, { decimals: false })} icon={Receipt} iconClassName="bg-violet-100 text-violet-700" />
@@ -199,7 +199,7 @@ function InventoryReport({ products, movementsCount }: { products: Product[]; mo
 
   return (
     <div className="mt-4 space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title="Inventory value (cost)" value={formatCurrency(value.cost, { decimals: false })} icon={Coins} iconClassName="bg-emerald-100 text-emerald-700" />
         <StatCard title="Retail value" value={formatCurrency(value.retail, { decimals: false })} icon={Banknote} />
         <StatCard title="Low stock" value={formatNumber(low)} icon={AlertTriangle} iconClassName="bg-amber-100 text-amber-700" />
@@ -267,12 +267,12 @@ function ProductPerformance({ sales, products }: { sales: Sale[]; products: Prod
                 {rows.map((r) => (
                   <TableRow key={r.productId}>
                     <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{formatNumber(r.units)}</TableCell>
-                    <TableCell>{formatCurrency(r.revenue, { decimals: false })}</TableCell>
-                    <TableCell className="text-success">
+                    <TableCell className="hidden whitespace-nowrap sm:table-cell">{formatNumber(r.units)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{formatCurrency(r.revenue, { decimals: false })}</TableCell>
+                    <TableCell className="whitespace-nowrap text-success">
                       {formatCurrency(r.profit, { decimals: false })}
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">{formatPercent(r.margin)}</TableCell>
+                    <TableCell className="hidden whitespace-nowrap sm:table-cell">{formatPercent(r.margin)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -332,7 +332,10 @@ function SellerPerformance({ sales, users }: { sales: Sale[]; users: User[] }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Seller</TableHead>
-                <TableHead>Transactions</TableHead>
+                <TableHead>
+                  <span className="sm:hidden">Txns</span>
+                  <span className="hidden sm:inline">Transactions</span>
+                </TableHead>
                 <TableHead>Revenue</TableHead>
                 <TableHead className="hidden sm:table-cell">Avg. sale</TableHead>
                 <TableHead className="hidden sm:table-cell">Refunds</TableHead>
@@ -342,9 +345,9 @@ function SellerPerformance({ sales, users }: { sales: Sale[]; users: User[] }) {
               {rows.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{r.name}</TableCell>
-                  <TableCell>{formatNumber(r.transactions)}</TableCell>
-                  <TableCell>{formatCurrency(r.revenue, { decimals: false })}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{formatCurrency(r.avg, { decimals: false })}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatNumber(r.transactions)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatCurrency(r.revenue, { decimals: false })}</TableCell>
+                  <TableCell className="hidden whitespace-nowrap sm:table-cell">{formatCurrency(r.avg, { decimals: false })}</TableCell>
                   <TableCell className="hidden sm:table-cell">{r.refunds}</TableCell>
                 </TableRow>
               ))}
@@ -397,10 +400,10 @@ import type { LucideIcon } from 'lucide-react'
 function Row({ label, value, icon: Icon }: { label: string; value: string; icon: LucideIcon }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="flex items-center gap-2 text-muted-foreground">
-        <Icon className="h-4 w-4" /> {label}
+      <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
+        <Icon className="h-4 w-4 shrink-0" /> {label}
       </span>
-      <span className="font-semibold">{value}</span>
+      <span className="shrink-0 whitespace-nowrap font-semibold">{value}</span>
     </div>
   )
 }

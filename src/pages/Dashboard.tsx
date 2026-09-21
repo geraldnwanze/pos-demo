@@ -94,7 +94,7 @@ export default function Dashboard() {
       {loading ? (
         <CardsSkeleton count={6} />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 2xl:grid-cols-6">
           <StatCard
             title="Today's Sales"
             value={formatCurrency(metrics.todayRevenue, { decimals: false })}
@@ -296,11 +296,11 @@ export default function Dashboard() {
                 <TableRow>
                   <TableHead>Transaction</TableHead>
                   <TableHead className="hidden sm:table-cell">Customer</TableHead>
-                  <TableHead className="hidden md:table-cell">Seller</TableHead>
+                  <TableHead className="hidden xl:table-cell">Seller</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead className="hidden sm:table-cell">Payment</TableHead>
                   <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Date</TableHead>
+                  <TableHead className="hidden xl:table-cell">Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -318,7 +318,7 @@ export default function Dashboard() {
                     <TableCell className="hidden max-w-[140px] truncate sm:table-cell">
                       {s.customerName}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell className="hidden xl:table-cell">
                       <span className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
                           <AvatarFallback className="text-[10px]">
@@ -328,7 +328,7 @@ export default function Dashboard() {
                               .join('')}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="truncate text-sm">{sellerName(s.sellerId)}</span>
+                        <span className="max-w-[10rem] truncate text-sm">{sellerName(s.sellerId)}</span>
                       </span>
                     </TableCell>
                     <TableCell className="font-medium">
@@ -343,7 +343,7 @@ export default function Dashboard() {
                     <TableCell className="hidden sm:table-cell">
                       <StatusBadge status={s.status} />
                     </TableCell>
-                    <TableCell className="hidden whitespace-nowrap text-sm text-muted-foreground lg:table-cell">
+                    <TableCell className="hidden whitespace-nowrap text-sm text-muted-foreground xl:table-cell">
                       {formatDateTime(s.createdAt)}
                     </TableCell>
                   </TableRow>

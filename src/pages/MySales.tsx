@@ -104,7 +104,7 @@ export default function MySales() {
       {loading ? (
         <CardsSkeleton count={4} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="Today's sales"
             value={formatCurrency(summary.todayRevenue, { decimals: false })}
