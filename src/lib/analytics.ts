@@ -9,21 +9,17 @@ import {
   subDays,
 } from 'date-fns'
 import type { Expense, PaymentMethod, Product, Sale } from '@/types'
-import { money } from './sales'
+import { money, refundedTotals } from './sales'
 
 export function isActiveSale(s: Sale): boolean {
   return s.status === 'completed' || s.status === 'partially_refunded'
 }
 
-/** Net revenue of a sale, accounting for partial refunds. */
+/** Money kept from a sale: the total collected minus anything refunded. */
 export function saleNet(s: Sale): number {
   if (s.status === 'refunded' || s.status === 'cancelled') return 0
   if (s.status === 'partially_refunded') {
-    const refundedValue = s.items.reduce(
-      (sum, i) => sum + (i.refundedQty ?? 0) * i.unitPrice,
-      0,
-    )
-    return money(Math.max(0, s.total - refundedValue))
+    return money(Math.max(0, s.total - refundedTotals(s).total))
   }
   return s.total
 }

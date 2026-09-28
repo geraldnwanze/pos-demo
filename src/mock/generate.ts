@@ -1,5 +1,6 @@
-import { addMinutes, setHours, setMinutes, subDays } from 'date-fns'
+import { max, setHours, setMinutes, startOfDay, subDays, subMinutes } from 'date-fns'
 import type {
+  Customer,
   DiscountType,
   PaymentMethod,
   Sale,
@@ -8,15 +9,20 @@ import type {
   StockMovementType,
 } from '@/types'
 import { computeSaleTotals, lineTotal, money } from '@/lib/sales'
+import { saleNet } from '@/lib/analytics'
 import { pick, pickWeighted, rand, randInt } from './rng'
 import { products } from './products'
 import { customers } from './customers'
 import { users } from './users'
+import { NOW } from './clock'
 
-/** Reference "now" for the demo dataset. */
-export const NOW = new Date('2026-09-19T10:30:00.000Z')
+export { NOW }
 
-const sellers = users.filter((u) => u.role === 'seller' || u.role === 'admin')
+// Only active staff and customers appear in generated sales
+const sellers = users.filter(
+  (u) => (u.role === 'seller' || u.role === 'admin') && u.status === 'active',
+)
+const activeCustomers = customers.filter((c) => c.status === 'active')
 const activeProducts = products.filter((p) => p.status === 'active')
 
 const paymentWeights: [PaymentMethod, number][] = [
@@ -59,7 +65,7 @@ function generateSales(): Sale[] {
     for (let s = 0; s < daily; s++) {
       const seller = pick(sellers)
       const withCustomer = rand() > 0.35
-      const customer = withCustomer ? pick(customers) : null
+      const customer = withCustomer ? pick(activeCustomers) : null
       const items = buildSaleItems()
       if (items.length === 0) continue
 
@@ -76,10 +82,12 @@ function generateSales(): Sale[] {
       const amountPaid =
         payment === 'cash' ? money(Math.ceil(totals.total / 500) * 500) : totals.total
 
-      const createdAt = addMinutes(
-        setMinutes(setHours(date, randInt(8, 20)), randInt(0, 59)),
-        0,
-      )
+      let createdAt = setMinutes(setHours(date, randInt(8, 20)), randInt(0, 59))
+      // Today's sales can't be in the future: pull them back to earlier today.
+      // A fixed offset (not another random draw) keeps the seeded data reproducible.
+      if (createdAt > NOW) {
+        createdAt = max([startOfDay(NOW), subMinutes(NOW, 5 + ((s * 37) % 240))])
+      }
 
       // ~4% of older sales were refunded
       const refunded = day > 2 && rand() > 0.96
@@ -111,6 +119,23 @@ function generateSales(): Sale[] {
 }
 
 export const sales: Sale[] = generateSales()
+
+/**
+ * Customers with lifetime figures derived from the generated sales, so a
+ * customer's total spent, order count and last purchase match their history.
+ * Uses the same rules as the live store: net of refunds, and a fully refunded
+ * sale doesn't count as an order.
+ */
+export const customersWithStats: Customer[] = customers.map((c) => {
+  const own = sales.filter((s) => s.customerId === c.id)
+  const kept = own.filter((s) => s.status !== 'refunded' && s.status !== 'cancelled')
+  return {
+    ...c,
+    totalSpent: money(own.reduce((sum, s) => sum + saleNet(s), 0)),
+    transactionCount: kept.length,
+    lastPurchase: own[0]?.createdAt ?? null, // sales are sorted newest first
+  }
+})
 
 /** Build recent stock movements: some restocks plus the last N sales. */
 function generateStockMovements(): StockMovement[] {

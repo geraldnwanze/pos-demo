@@ -8,6 +8,8 @@ import {
   Users,
   TrendingUp,
   ArrowRight,
+  Wallet,
+  Scale,
 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { StatCard } from '@/components/shared/StatCard'
@@ -40,9 +42,10 @@ import {
   todaySales,
   topSellingProducts,
   isActiveSale,
+  expensesInRange,
 } from '@/lib/analytics'
 import { formatCurrency, formatDateTime, formatNumber } from '@/lib/format'
-import { subDays } from 'date-fns'
+import { startOfMonth, subDays } from 'date-fns'
 import { cn } from '@/lib/utils'
 
 const RANGES = [
@@ -58,6 +61,7 @@ export default function Dashboard() {
   const sales = useDataStore((s) => s.sales)
   const customers = useDataStore((s) => s.customers)
   const users = useDataStore((s) => s.users)
+  const expenses = useDataStore((s) => s.expenses)
   const [range, setRange] = useState(7)
   const now = useMemo(() => new Date(), [])
 
@@ -65,6 +69,11 @@ export default function Dashboard() {
     const today = todaySales(sales)
     const todayRevenue = today.filter(isActiveSale).reduce((sum, s) => sum + saleNet(s), 0)
     const low = lowStockProducts(products)
+    const monthly = monthlyRevenue(sales, now)
+    const monthlyExpenses = expensesInRange(expenses, startOfMonth(now), now).reduce(
+      (sum, e) => sum + e.amount,
+      0,
+    )
     return {
       todayRevenue,
       todayTransactions: today.length,
@@ -72,7 +81,9 @@ export default function Dashboard() {
       lowStock: low.length,
       lowStockList: low.slice(0, 6),
       totalCustomers: customers.length,
-      monthly: monthlyRevenue(sales),
+      monthly,
+      monthlyExpenses,
+      monthlyNet: monthly - monthlyExpenses,
       revenueSeries: revenueByDay(sales, range),
       payments: salesByPaymentMethod(
         sales.filter((s) => new Date(s.createdAt) >= subDays(now, range)),
@@ -80,7 +91,7 @@ export default function Dashboard() {
       topProducts: topSellingProducts(sales, 5),
       recent: sales.slice(0, 6),
     }
-  }, [sales, products, customers, range, now])
+  }, [sales, products, customers, expenses, range, now])
 
   const sellerName = (id: string) => users.find((u) => u.id === id)?.name ?? 'Unknown'
 
@@ -92,9 +103,9 @@ export default function Dashboard() {
       />
 
       {loading ? (
-        <CardsSkeleton count={6} />
+        <CardsSkeleton count={8} />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 2xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           <StatCard
             title="Today's Sales"
             value={formatCurrency(metrics.todayRevenue, { decimals: false })}
@@ -135,6 +146,22 @@ export default function Dashboard() {
             icon={TrendingUp}
             iconClassName="bg-rose-100 text-rose-700"
             trend={{ value: 5.6, label: 'this month' }}
+          />
+          <StatCard
+            title="Monthly Expenses"
+            value={formatCurrency(metrics.monthlyExpenses, { decimals: false })}
+            icon={Wallet}
+            iconClassName="bg-orange-100 text-orange-700"
+            hint="Rent, salaries, utilities…"
+          />
+          <StatCard
+            title="Revenue − Expenses"
+            value={formatCurrency(metrics.monthlyNet, { decimals: false })}
+            icon={Scale}
+            iconClassName={
+              metrics.monthlyNet >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+            }
+            hint="This month, before cost of goods"
           />
         </div>
       )}

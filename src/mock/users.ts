@@ -1,4 +1,5 @@
 import type { User } from '@/types'
+import { ago } from './clock'
 
 /**
  * Demo users. The three primary accounts use the password `password`
@@ -15,7 +16,7 @@ export const users: User[] = [
     status: 'active',
     avatarColor: '#2563eb',
     createdAt: '2023-01-01T08:00:00.000Z',
-    lastLogin: '2026-09-19T07:12:00.000Z',
+    lastLogin: ago({ hours: 3, minutes: 18 }),
   },
   {
     id: 'user-2',
@@ -27,7 +28,7 @@ export const users: User[] = [
     status: 'active',
     avatarColor: '#7c3aed',
     createdAt: '2023-01-10T08:00:00.000Z',
-    lastLogin: '2026-09-19T06:40:00.000Z',
+    lastLogin: ago({ hours: 3, minutes: 50 }),
   },
   {
     id: 'user-3',
@@ -39,7 +40,7 @@ export const users: User[] = [
     status: 'active',
     avatarColor: '#059669',
     createdAt: '2023-02-01T08:00:00.000Z',
-    lastLogin: '2026-09-19T08:05:00.000Z',
+    lastLogin: ago({ hours: 2, minutes: 25 }),
   },
   {
     id: 'user-4',
@@ -51,7 +52,7 @@ export const users: User[] = [
     status: 'active',
     avatarColor: '#db2777',
     createdAt: '2023-03-15T08:00:00.000Z',
-    lastLogin: '2026-09-18T17:30:00.000Z',
+    lastLogin: ago({ hours: 17 }),
   },
   {
     id: 'user-5',
@@ -63,7 +64,7 @@ export const users: User[] = [
     status: 'active',
     avatarColor: '#ea580c',
     createdAt: '2023-05-20T08:00:00.000Z',
-    lastLogin: '2026-09-19T07:50:00.000Z',
+    lastLogin: ago({ hours: 2, minutes: 40 }),
   },
   {
     id: 'user-6',
@@ -75,7 +76,7 @@ export const users: User[] = [
     status: 'active',
     avatarColor: '#0891b2',
     createdAt: '2023-07-11T08:00:00.000Z',
-    lastLogin: '2026-09-18T15:20:00.000Z',
+    lastLogin: ago({ hours: 19, minutes: 10 }),
   },
   {
     id: 'user-7',
@@ -87,7 +88,7 @@ export const users: User[] = [
     status: 'active',
     avatarColor: '#4f46e5',
     createdAt: '2023-06-01T08:00:00.000Z',
-    lastLogin: '2026-09-17T12:00:00.000Z',
+    lastLogin: ago({ days: 1, hours: 22, minutes: 30 }),
   },
   {
     id: 'user-8',
@@ -99,7 +100,7 @@ export const users: User[] = [
     status: 'inactive',
     avatarColor: '#9333ea',
     createdAt: '2024-02-15T08:00:00.000Z',
-    lastLogin: '2026-08-30T10:10:00.000Z',
+    lastLogin: ago({ days: 20 }),
   },
 ]
 

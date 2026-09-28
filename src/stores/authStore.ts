@@ -26,8 +26,8 @@ export const useAuthStore = create<AuthState>()(
       login: async (email, password) => {
         set({ status: 'loading', error: null })
         try {
-          const users = useDataStore.getState().users
-          const user = await mockAuthService.login(email, password, users)
+          const { users, passwords } = useDataStore.getState()
+          const user = await mockAuthService.login(email, password, users, passwords)
           useDataStore.getState().recordLogin(user.id)
           set({ user, status: 'authenticated', error: null })
           return user
@@ -61,3 +61,21 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 )
+
+// Keep the signed-in user in step with the data store, so profile edits and
+// role changes show immediately and a deactivated or deleted account is signed out.
+function syncSession(users: User[]) {
+  const current = useAuthStore.getState().user
+  if (!current) return
+  const fresh = users.find((u) => u.id === current.id)
+  if (!fresh || fresh.status !== 'active') {
+    useAuthStore.getState().logout()
+  } else if (fresh !== current) {
+    useAuthStore.setState({ user: fresh })
+  }
+}
+
+syncSession(useDataStore.getState().users)
+useDataStore.subscribe((state, prev) => {
+  if (state.users !== prev.users) syncSession(state.users)
+})

@@ -1,8 +1,9 @@
 import { format, formatDistanceToNow, parseISO } from 'date-fns'
 
 /**
- * Currency formatting. Default currency is NGN (₦). Kept in one place so a real
- * settings-driven currency can replace the default without touching components.
+ * Currency formatting. Every money value in the app goes through here, so the
+ * business currency (Settings → Business) is applied in one place. It's kept in
+ * sync by a subscription at the bottom of stores/dataStore.ts.
  */
 export interface CurrencyOptions {
   currency?: string
@@ -18,13 +19,19 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€',
 }
 
-export function currencySymbol(currency = 'NGN'): string {
+let activeCurrency = 'NGN'
+
+export function setActiveCurrency(currency: string): void {
+  activeCurrency = currency
+}
+
+export function currencySymbol(currency = activeCurrency): string {
   return CURRENCY_SYMBOLS[currency] ?? currency
 }
 
 export function formatCurrency(
   value: number,
-  { currency = 'NGN', locale = 'en-NG', decimals = true }: CurrencyOptions = {},
+  { currency = activeCurrency, locale = 'en-NG', decimals = true }: CurrencyOptions = {},
 ): string {
   const symbol = currencySymbol(currency)
   const formatted = new Intl.NumberFormat(locale, {
@@ -35,7 +42,7 @@ export function formatCurrency(
 }
 
 /** Compact currency, e.g. ₦24.9M — used for KPI cards. */
-export function formatCurrencyCompact(value: number, currency = 'NGN'): string {
+export function formatCurrencyCompact(value: number, currency = activeCurrency): string {
   const symbol = currencySymbol(currency)
   const formatted = new Intl.NumberFormat('en-US', {
     notation: 'compact',

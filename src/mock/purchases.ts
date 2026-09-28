@@ -2,7 +2,7 @@ import { subDays, addDays } from 'date-fns'
 import type { Purchase, PurchaseItem } from '@/types'
 import { products } from './products'
 import { money } from '@/lib/sales'
-import { NOW } from './generate'
+import { NOW } from './clock'
 
 function items(indexes: number[], qtys: number[]): PurchaseItem[] {
   return indexes.map((idx, i) => {

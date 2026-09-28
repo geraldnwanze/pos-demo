@@ -129,6 +129,8 @@ export interface Sale {
   change: number
   status: SaleStatus
   refundReason?: string
+  /** Total money returned to the customer so far (incl. tax, net of discount). */
+  refundedAmount?: number
   createdAt: string
 }
 

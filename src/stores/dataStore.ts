@@ -19,9 +19,20 @@ import type {
 } from '@/types'
 import { seed } from '@/mock'
 import { genId, nextRef } from '@/lib/id'
-import { money } from '@/lib/sales'
+import { money, refundBreakdown, refundedTotals } from '@/lib/sales'
+import { formatCurrency, setActiveCurrency } from '@/lib/format'
 
-const DATA_VERSION = 3
+// Bumped to 5: mock dates are relative to the current day (see mock/clock.ts)
+// and generated sales only use active staff and customers
+const DATA_VERSION = 5
+
+/** Thrown by `createSale` when live stock can't cover the cart. */
+export class InsufficientStockError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'InsufficientStockError'
+  }
+}
 
 export interface CreateSaleInput {
   sellerId: string
@@ -73,6 +84,12 @@ interface DataState {
   notifications: AppNotification[]
   businessSettings: BusinessSettings
   posSettings: PosSettings
+  /**
+   * DEMO ONLY: per-user passwords, stored in plain text in localStorage so the
+   * mock login can honour password changes. A real backend must hash these and
+   * never send them to the client. Users without an entry use the default.
+   */
+  passwords: Record<string, string>
 
   // internal
   logAudit: (log: Omit<AuditLog, 'id' | 'ipAddress' | 'createdAt'>) => void
@@ -133,6 +150,10 @@ interface DataState {
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
 
+  // auth (demo)
+  changePassword: (userId: string, password: string, actor: Actor) => void
+  resetPassword: (userId: string, actor: Actor) => void
+
   // settings
   updateBusinessSettings: (patch: Partial<BusinessSettings>, actor: Actor) => void
   updatePosSettings: (patch: Partial<PosSettings>, actor: Actor) => void
@@ -163,6 +184,7 @@ function freshState() {
     notifications: seed.notifications(),
     businessSettings: seed.businessSettings(),
     posSettings: seed.posSettings(),
+    passwords: {} as Record<string, string>,
   }
 }
 
@@ -515,6 +537,21 @@ export const useDataStore = create<DataState>()(
       },
 
       createSale: (input) => {
+        // Live stock is the authority — the cart holds a snapshot that another
+        // held order or a stock adjustment may have made stale.
+        const allowNegative = get().posSettings.allowNegativeInventory
+        if (!allowNegative) {
+          const short = input.items
+            .map((item) => ({ item, product: get().products.find((p) => p.id === item.productId) }))
+            .filter(({ item, product }) => !product || product.stock < item.quantity)
+          if (short.length > 0) {
+            const detail = short
+              .map(({ item, product }) => `${item.name} (${product ? product.stock : 0} left)`)
+              .join(', ')
+            throw new InsufficientStockError(`Not enough stock: ${detail}.`)
+          }
+        }
+
         const seller = get().users.find((u) => u.id === input.sellerId)
         const sale: Sale = {
           ...input,
@@ -541,7 +578,7 @@ export const useDataStore = create<DataState>()(
             if (!item) return p
             return {
               ...p,
-              stock: Math.max(0, p.stock - item.quantity),
+              stock: allowNegative ? p.stock - item.quantity : Math.max(0, p.stock - item.quantity),
               unitsSold: p.unitsSold + item.quantity,
             }
           }),
@@ -574,7 +611,7 @@ export const useDataStore = create<DataState>()(
         get().pushNotification({
           type: 'sale',
           title: 'New sale completed',
-          message: `${seller?.name ?? 'A seller'} completed a sale of ₦${sale.total.toLocaleString()}.`,
+          message: `${seller?.name ?? 'A seller'} completed a sale of ${formatCurrency(sale.total)}.`,
         })
 
         // Low-stock notifications for affected products
@@ -583,8 +620,8 @@ export const useDataStore = create<DataState>()(
           if (p && p.stock <= p.minStock) {
             get().pushNotification({
               type: 'stock',
-              title: p.stock === 0 ? 'Out of stock' : 'Low stock alert',
-              message: `${p.name} is ${p.stock === 0 ? 'out of stock' : `below minimum (${p.stock} / ${p.minStock})`}.`,
+              title: p.stock <= 0 ? 'Out of stock' : 'Low stock alert',
+              message: `${p.name} is ${p.stock <= 0 ? 'out of stock' : `below minimum (${p.stock} / ${p.minStock})`}.`,
             })
           }
         }
@@ -594,42 +631,55 @@ export const useDataStore = create<DataState>()(
 
       refundSale: (input) => {
         const sale = get().sales.find((s) => s.id === input.saleId)
-        if (!sale) return
+        if (!sale || sale.status === 'refunded' || sale.status === 'cancelled') return
 
-        // Restore stock + movements
-        const newMovements: StockMovement[] = input.items
-          .filter((i) => i.quantity > 0)
-          .map((i) => ({
-            id: genId('mov'),
-            productId: i.productId,
-            type: 'RETURN',
-            quantity: i.quantity,
-            reference: `Refund ${sale.reference}`,
-            userId: input.userId,
-            note: input.reason,
-            createdAt: new Date().toISOString(),
-          }))
+        // Never refund more units than were sold and not yet refunded
+        const lines = input.items
+          .map((req) => {
+            const item = sale.items.find((i) => i.productId === req.productId)
+            const remaining = item ? item.quantity - (item.refundedQty ?? 0) : 0
+            return { item, quantity: Math.min(Math.max(0, Math.floor(req.quantity)), remaining) }
+          })
+          .filter((l): l is { item: Sale['items'][number]; quantity: number } => !!l.item && l.quantity > 0)
+        if (lines.length === 0) return
+
+        const now = new Date().toISOString()
+        const newMovements: StockMovement[] = lines.map((l) => ({
+          id: genId('mov'),
+          productId: l.item.productId,
+          type: 'RETURN',
+          quantity: l.quantity,
+          reference: `Refund ${sale.reference}`,
+          userId: input.userId,
+          note: input.reason,
+          createdAt: now,
+        }))
 
         set((s) => ({
           products: s.products.map((p) => {
-            const ref = input.items.find((i) => i.productId === p.id)
-            if (!ref) return p
+            const line = lines.find((l) => l.item.productId === p.id)
+            if (!line) return p
             return {
               ...p,
-              stock: p.stock + ref.quantity,
-              unitsSold: Math.max(0, p.unitsSold - ref.quantity),
+              stock: p.stock + line.quantity,
+              unitsSold: Math.max(0, p.unitsSold - line.quantity),
             }
           }),
           stockMovements: [...newMovements, ...s.stockMovements],
         }))
 
-        // Determine full vs partial refund
         const updatedItems = sale.items.map((item) => {
-          const ref = input.items.find((i) => i.productId === item.productId)
-          const refundedQty = (item.refundedQty ?? 0) + (ref?.quantity ?? 0)
-          return { ...item, refundedQty }
+          const line = lines.find((l) => l.item.productId === item.productId)
+          return line ? { ...item, refundedQty: (item.refundedQty ?? 0) + line.quantity } : item
         })
         const fullyRefunded = updatedItems.every((i) => (i.refundedQty ?? 0) >= i.quantity)
+
+        // Money returned: what was actually paid for those units (discount + tax aware).
+        // A full refund returns exactly what's left of the total, so rounding can't drift.
+        const alreadyRefunded = refundedTotals(sale).total
+        const amount = fullyRefunded
+          ? money(sale.total - alreadyRefunded)
+          : money(lines.reduce((sum, l) => sum + refundBreakdown(sale, l.item, l.quantity).total, 0))
 
         set((s) => ({
           sales: s.sales.map((x) =>
@@ -639,22 +689,40 @@ export const useDataStore = create<DataState>()(
                   items: updatedItems,
                   status: fullyRefunded ? 'refunded' : 'partially_refunded',
                   refundReason: input.reason,
+                  refundedAmount: money(alreadyRefunded + amount),
                 }
               : x,
           ),
         }))
+
+        // Customer lifetime value reflects money actually kept
+        if (sale.customerId) {
+          set((s) => ({
+            customers: s.customers.map((c) =>
+              c.id === sale.customerId
+                ? {
+                    ...c,
+                    totalSpent: money(Math.max(0, c.totalSpent - amount)),
+                    transactionCount: fullyRefunded
+                      ? Math.max(0, c.transactionCount - 1)
+                      : c.transactionCount,
+                  }
+                : c,
+            ),
+          }))
+        }
 
         get().logAudit({
           userId: input.userId,
           userName: input.userName,
           action: 'REFUND_ISSUED',
           entity: 'Sale',
-          description: `${fullyRefunded ? 'refunded' : 'partially refunded'} transaction ${sale.reference}`,
+          description: `${fullyRefunded ? 'refunded' : 'partially refunded'} transaction ${sale.reference} (${formatCurrency(amount)})`,
         })
         get().pushNotification({
           type: 'sale',
           title: 'Refund processed',
-          message: `Refund issued for ${sale.reference}.`,
+          message: `Refunded ${formatCurrency(amount)} on ${sale.reference}.`,
         })
       },
 
@@ -753,7 +821,7 @@ export const useDataStore = create<DataState>()(
           userName: actor.name,
           action: 'EXPENSE_ADDED',
           entity: 'Expense',
-          description: `added expense ${e.title} (₦${e.amount.toLocaleString()})`,
+          description: `added expense ${e.title} (${formatCurrency(e.amount)})`,
         })
       },
 
@@ -810,6 +878,33 @@ export const useDataStore = create<DataState>()(
         })
       },
 
+      changePassword: (userId, password, actor) => {
+        set((s) => ({ passwords: { ...s.passwords, [userId]: password } }))
+        get().logAudit({
+          userId: actor.id,
+          userName: actor.name,
+          action: 'PASSWORD_CHANGED',
+          entity: 'User',
+          description: 'changed their password',
+        })
+      },
+
+      resetPassword: (userId, actor) => {
+        set((s) => {
+          const passwords = { ...s.passwords }
+          delete passwords[userId]
+          return { passwords }
+        })
+        const name = get().users.find((u) => u.id === userId)?.name ?? userId
+        get().logAudit({
+          userId: actor.id,
+          userName: actor.name,
+          action: 'PASSWORD_RESET',
+          entity: 'User',
+          description: `reset the password for ${name}`,
+        })
+      },
+
       recordLogin: (userId) =>
         set((s) => ({
           users: s.users.map((u) =>
@@ -826,3 +921,12 @@ export const useDataStore = create<DataState>()(
     },
   ),
 )
+
+// The currency formatter reads a module-level currency; keep it in step with
+// Business settings (persisted state is rehydrated synchronously above).
+setActiveCurrency(useDataStore.getState().businessSettings.currency)
+useDataStore.subscribe((state, prev) => {
+  if (state.businessSettings.currency !== prev.businessSettings.currency) {
+    setActiveCurrency(state.businessSettings.currency)
+  }
+})

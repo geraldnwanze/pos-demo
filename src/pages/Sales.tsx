@@ -28,11 +28,13 @@ export default function Sales() {
   const navigate = useNavigate()
   const sales = useDataStore((s) => s.sales)
   const users = useDataStore((s) => s.users)
+  const customers = useDataStore((s) => s.customers)
 
   const sellers = users.filter((u) => u.role === 'seller' || u.role === 'admin')
   const [sellerFilter, setSellerFilter] = useState('all')
   const [paymentFilter, setPaymentFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [customerFilter, setCustomerFilter] = useState('all')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
@@ -44,14 +46,19 @@ export default function Sales() {
         if (sellerFilter !== 'all' && s.sellerId !== sellerFilter) return false
         if (paymentFilter !== 'all' && s.paymentMethod !== paymentFilter) return false
         if (statusFilter !== 'all' && s.status !== statusFilter) return false
-        if (from && to) {
+        if (customerFilter === 'walk-in' && s.customerId) return false
+        if (customerFilter !== 'all' && customerFilter !== 'walk-in' && s.customerId !== customerFilter)
+          return false
+        // Either end of the date range can be set on its own
+        if (from || to) {
           const d = parseISO(s.createdAt)
-          if (!isWithinInterval(d, { start: startOfDay(parseISO(from)), end: endOfDay(parseISO(to)) }))
-            return false
+          const start = from ? startOfDay(parseISO(from)) : new Date(0)
+          const end = to ? endOfDay(parseISO(to)) : new Date(8.64e15)
+          if (!isWithinInterval(d, { start, end })) return false
         }
         return true
       }),
-    [sales, sellerFilter, paymentFilter, statusFilter, from, to],
+    [sales, sellerFilter, paymentFilter, statusFilter, customerFilter, from, to],
   )
 
   const summary = useMemo(() => {
@@ -79,7 +86,9 @@ export default function Sales() {
         cell: ({ row }) => <span className="block max-w-[140px] truncate">{row.original.customerName}</span>,
       },
       {
-        accessorKey: 'sellerId',
+        // Search and sort by the seller's name, not their internal id
+        id: 'seller',
+        accessorFn: (row) => sellerName(row.sellerId),
         header: 'Seller',
         cell: ({ row }) => <span className="text-sm">{sellerName(row.original.sellerId)}</span>,
       },
@@ -162,7 +171,7 @@ export default function Sales() {
           columns={columns}
           data={filtered}
           searchKey="reference"
-          searchPlaceholder="Search by reference or customer…"
+          searchPlaceholder="Search reference, customer or seller…"
           onRowClick={(s) => navigate(`/sales/${s.id}`)}
           emptyState={
             <EmptyState icon={Receipt} title="No transactions found" description="Adjust the filters to see results." />
@@ -192,6 +201,20 @@ export default function Sales() {
                   {sellers.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={customerFilter} onValueChange={setCustomerFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All customers</SelectItem>
+                  <SelectItem value="walk-in">Walk-in only</SelectItem>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -1,4 +1,4 @@
-import type { DiscountType, SaleItem } from '@/types'
+import type { DiscountType, Sale, SaleItem } from '@/types'
 
 export interface SaleTotals {
   subtotal: number
@@ -48,4 +48,42 @@ export function computeSaleTotals(
 
   const total = money(subtotal - discountAmount + tax)
   return { subtotal, discountAmount, tax, total }
+}
+
+type SaleAmounts = Pick<Sale, 'subtotal' | 'discountAmount'>
+type LinePrice = Pick<SaleItem, 'unitPrice' | 'taxRate'>
+
+function discountRatio(sale: SaleAmounts): number {
+  return sale.subtotal > 0 ? (sale.subtotal - sale.discountAmount) / sale.subtotal : 1
+}
+
+/**
+ * What the customer actually paid for `qty` units of a line: unit price, less
+ * the sale's discount spread proportionally, plus that line's tax. Mirrors
+ * `computeSaleTotals`, so refunding every unit returns the sale total.
+ */
+export function refundBreakdown(
+  sale: SaleAmounts,
+  item: LinePrice,
+  qty: number,
+): { net: number; tax: number; total: number } {
+  const net = item.unitPrice * qty * discountRatio(sale)
+  const tax = (net * item.taxRate) / 100
+  return { net: money(net), tax: money(tax), total: money(net + tax) }
+}
+
+/** Refund value of every unit refunded so far on a sale. */
+export function refundedTotals(sale: Sale): { net: number; tax: number; total: number } {
+  if (sale.status === 'refunded') {
+    return { net: money(sale.subtotal - sale.discountAmount), tax: sale.tax, total: sale.total }
+  }
+  const sum = sale.items.reduce(
+    (acc, i) => {
+      const r = refundBreakdown(sale, i, i.refundedQty ?? 0)
+      return { net: acc.net + r.net, tax: acc.tax + r.tax }
+    },
+    { net: 0, tax: 0 },
+  )
+  const total = sale.refundedAmount ?? money(sum.net + sum.tax)
+  return { net: money(sum.net), tax: money(sum.tax), total }
 }

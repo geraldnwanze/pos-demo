@@ -1,6 +1,6 @@
 import { subMinutes, subHours } from 'date-fns'
 import type { AppNotification } from '@/types'
-import { NOW } from './generate'
+import { NOW } from './clock'
 
 export const notifications: AppNotification[] = [
   {

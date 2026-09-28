@@ -19,6 +19,7 @@ import { UserFormDialog } from '@/components/users/UserFormDialog'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useDataStore } from '@/stores/dataStore'
 import { useAuth } from '@/hooks/useAuth'
+import { DEMO_PASSWORD } from '@/services/auth'
 import { useSimulatedLoading } from '@/hooks/useSimulatedLoading'
 import { ROLE_LABELS } from '@/lib/rbac'
 import { formatRelative } from '@/lib/format'
@@ -40,6 +41,7 @@ export default function Users() {
   const users = useDataStore((s) => s.users)
   const stores = useDataStore((s) => s.stores)
   const updateUser = useDataStore((s) => s.updateUser)
+  const resetPassword = useDataStore((s) => s.resetPassword)
   const deleteUser = useDataStore((s) => s.deleteUser)
 
   const [formOpen, setFormOpen] = useState(false)
@@ -121,7 +123,12 @@ export default function Users() {
                   >
                     <Pencil className="h-4 w-4" /> Edit
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => toast.success('Password reset link sent.')}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      resetPassword(row.original.id, actor)
+                      toast.success(`Password for ${row.original.name} reset to "${DEMO_PASSWORD}".`)
+                    }}
+                  >
                     <KeyRound className="h-4 w-4" /> Reset password
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled={isSelf} onClick={() => setToggling(row.original)}>

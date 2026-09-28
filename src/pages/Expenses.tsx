@@ -39,7 +39,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useDataStore } from '@/stores/dataStore'
 import { useAuth } from '@/hooks/useAuth'
 import { useSimulatedLoading } from '@/hooks/useSimulatedLoading'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { currencySymbol, formatCurrency, formatDate } from '@/lib/format'
 import { expensesInRange } from '@/lib/analytics'
 import { startOfMonth } from 'date-fns'
 import type { Expense, ExpenseCategory, PaymentMethod } from '@/types'
@@ -319,7 +319,7 @@ export default function Expenses() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Amount (₦)</Label>
+                <Label>Amount ({currencySymbol()})</Label>
                 <Input type="number" step="0.01" {...register('amount')} />
                 {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
               </div>

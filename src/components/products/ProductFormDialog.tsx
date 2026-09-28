@@ -25,6 +25,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { useDataStore } from '@/stores/dataStore'
 import { useAuth } from '@/hooks/useAuth'
+import { currencySymbol } from '@/lib/format'
 import type { Product } from '@/types'
 
 const schema = z.object({
@@ -57,6 +58,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const suppliers = useDataStore((s) => s.suppliers)
   const addProduct = useDataStore((s) => s.addProduct)
   const updateProduct = useDataStore((s) => s.updateProduct)
+  const defaultTaxRate = useDataStore((s) => s.posSettings.defaultTaxRate)
   const isEdit = !!product
 
   const {
@@ -76,7 +78,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       description: '',
       costPrice: 0,
       sellingPrice: 0,
-      taxRate: 7.5,
+      taxRate: defaultTaxRate,
       minStock: 10,
       stock: 0,
       supplierId: '',
@@ -95,7 +97,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         description: product?.description ?? '',
         costPrice: product?.costPrice ?? 0,
         sellingPrice: product?.sellingPrice ?? 0,
-        taxRate: product?.taxRate ?? 7.5,
+        taxRate: product?.taxRate ?? defaultTaxRate,
         minStock: product?.minStock ?? 10,
         stock: product?.stock ?? 0,
         supplierId: product?.supplierId ?? '',
@@ -103,7 +105,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         status: product?.status ?? 'active',
       })
     }
-  }, [open, product, reset])
+  }, [open, product, reset, defaultTaxRate])
 
   const onSubmit = (values: FormValues) => {
     const payload = {
@@ -199,14 +201,14 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 <Textarea placeholder="optional" {...register('description')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Cost price (₦)</Label>
+                <Label>Cost price ({currencySymbol()})</Label>
                 <Input type="number" step="0.01" {...register('costPrice')} />
                 {errors.costPrice && (
                   <p className="text-xs text-destructive">{errors.costPrice.message}</p>
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label>Selling price (₦)</Label>
+                <Label>Selling price ({currencySymbol()})</Label>
                 <Input type="number" step="0.01" {...register('sellingPrice')} />
                 {errors.sellingPrice && (
                   <p className="text-xs text-destructive">{errors.sellingPrice.message}</p>

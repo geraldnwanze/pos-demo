@@ -1,6 +1,6 @@
 import { subHours, subDays } from 'date-fns'
 import type { AuditLog } from '@/types'
-import { NOW } from './generate'
+import { NOW } from './clock'
 
 const ips = ['102.89.34.10', '197.210.55.212', '105.112.9.87', '41.203.78.4']
 

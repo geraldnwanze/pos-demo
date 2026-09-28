@@ -28,11 +28,11 @@ import { ProductImage } from '@/components/shared/ProductImage'
 import { EmptyState } from '@/components/shared/States'
 import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog'
 import { ReceiptDialog } from '@/components/pos/ReceiptDialog'
-import { useDataStore } from '@/stores/dataStore'
+import { useDataStore, InsufficientStockError } from '@/stores/dataStore'
 import { useCartStore, useActiveCart, cartItemCount } from '@/stores/cartStore'
 import { useAuth } from '@/hooks/useAuth'
 import { computeSaleTotals, money } from '@/lib/sales'
-import { formatCurrency } from '@/lib/format'
+import { currencySymbol, formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { DiscountType, PaymentMethod, Sale, SaleItem } from '@/types'
 
@@ -85,8 +85,12 @@ export default function Pos() {
       )
   }, [products, search, activeCategory])
 
-  // Cart lines re-hydrated with live stock
   const lines = cart.lines
+  // Live stock limit per product (the cart line only holds a snapshot)
+  const liveStock = (productId: string) => products.find((p) => p.id === productId)?.stock ?? 0
+  const maxQty = (productId: string) =>
+    posSettings.allowNegativeInventory ? Infinity : Math.max(0, liveStock(productId))
+  const shortLines = lines.filter((l) => l.quantity > maxQty(l.productId))
   const saleItems: SaleItem[] = lines.map((l) => ({
     productId: l.productId,
     name: l.name,
@@ -135,6 +139,12 @@ export default function Pos() {
       toast.error('Discount cannot exceed the subtotal.')
       return
     }
+    if (shortLines.length > 0) {
+      toast.error(
+        `Not enough stock: ${shortLines.map((l) => `${l.name} (${Math.max(0, liveStock(l.productId))} left)`).join(', ')}.`,
+      )
+      return
+    }
 
     const paid =
       cart.paymentMethod === 'cash' && amountPaid
@@ -145,22 +155,32 @@ export default function Pos() {
       return
     }
 
-    const sale = createSale({
-      sellerId: user!.id,
-      storeId: user!.storeId ?? 'store-1',
-      customerId: cart.customerId,
-      customerName: selectedCustomer?.name ?? 'Walk-in Customer',
-      items: saleItems,
-      subtotal: totals.subtotal,
-      discountType: cart.discountType,
-      discountValue: cart.discountValue,
-      discountAmount: totals.discountAmount,
-      tax: totals.tax,
-      total: totals.total,
-      paymentMethod: cart.paymentMethod,
-      amountPaid: paid,
-      change: money(paid - totals.total),
-    })
+    let sale: Sale
+    try {
+      sale = createSale({
+        sellerId: user!.id,
+        storeId: user!.storeId ?? 'store-1',
+        customerId: cart.customerId,
+        customerName: selectedCustomer?.name ?? 'Walk-in Customer',
+        items: saleItems,
+        subtotal: totals.subtotal,
+        discountType: cart.discountType,
+        discountValue: cart.discountValue,
+        discountAmount: totals.discountAmount,
+        tax: totals.tax,
+        total: totals.total,
+        paymentMethod: cart.paymentMethod,
+        amountPaid: paid,
+        change: money(paid - totals.total),
+      })
+    } catch (err) {
+      // The store re-checks live stock; surface its reason instead of crashing
+      if (err instanceof InsufficientStockError) {
+        toast.error(err.message)
+        return
+      }
+      throw err
+    }
 
     toast.success('Sale completed successfully.')
     setCompletedSale(sale)
@@ -282,6 +302,11 @@ export default function Pos() {
                   <p className="text-xs text-muted-foreground">
                     {formatCurrency(l.unitPrice, { decimals: false })} each
                   </p>
+                  {l.quantity > maxQty(l.productId) && (
+                    <p className="text-xs font-medium text-destructive">
+                      Only {Math.max(0, liveStock(l.productId))} left
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <Button variant="outline" size="icon-sm" onClick={() => decrement(l.productId)}>
@@ -291,7 +316,11 @@ export default function Pos() {
                   <Button
                     variant="outline"
                     size="icon-sm"
-                    onClick={() => increment(l.productId, posSettings.allowNegativeInventory)}
+                    onClick={() => {
+                      if (!increment(l.productId, maxQty(l.productId))) {
+                        toast.error(`Only ${Math.max(0, liveStock(l.productId))} ${l.name} in stock.`)
+                      }
+                    }}
                   >
                     <Plus className="h-3 w-3" />
                   </Button>
@@ -327,7 +356,7 @@ export default function Pos() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="percentage">% Off</SelectItem>
-                  <SelectItem value="fixed">₦ Off</SelectItem>
+                  <SelectItem value="fixed">{currencySymbol()} Off</SelectItem>
                 </SelectContent>
               </Select>
               <Input

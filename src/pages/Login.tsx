@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useAuth } from '@/hooks/useAuth'
 import { homeForRole } from '@/lib/home'
 import { ROLE_LABELS } from '@/lib/rbac'
+import { formatCurrencyCompact } from '@/lib/format'
 
 const schema = z.object({
   email: z.string().min(1, 'Email is required').email('Enter a valid email'),
@@ -84,7 +85,7 @@ export default function Login() {
             {[
               ['1,248', 'Products'],
               ['4,832', 'Customers'],
-              ['₦24.8M', 'Monthly revenue'],
+              [formatCurrencyCompact(24_800_000), 'Monthly revenue'],
             ].map(([value, label]) => (
               <div key={label}>
                 <p className="text-2xl font-bold">{value}</p>

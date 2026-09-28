@@ -24,6 +24,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useDataStore } from '@/stores/dataStore'
 import { useAuth } from '@/hooks/useAuth'
 import { useCartStore } from '@/stores/cartStore'
+import { DEMO_PASSWORD } from '@/services/auth'
 
 const businessSchema = z.object({
   name: z.string().min(2, 'Required'),
@@ -40,9 +41,21 @@ const profileSchema = z.object({
   name: z.string().min(2, 'Required'),
   email: z.string().email('Enter a valid email'),
   phone: z.string().min(7, 'Required'),
-  password: z.string().optional(),
 })
 type ProfileValues = z.infer<typeof profileSchema>
+
+const passwordSchema = z
+  .object({
+    current: z.string().min(1, 'Enter your current password'),
+    next: z.string().min(8, 'Use at least 8 characters'),
+    confirm: z.string().min(1, 'Confirm your new password'),
+  })
+  .refine((v) => v.next === v.confirm, { path: ['confirm'], message: 'Passwords do not match' })
+  .refine((v) => v.next !== v.current, {
+    path: ['next'],
+    message: 'Choose a different password from your current one',
+  })
+type PasswordValues = z.infer<typeof passwordSchema>
 
 export default function Settings() {
   const { tab } = useParams()
@@ -57,6 +70,7 @@ export default function Settings() {
   const updateBusiness = useDataStore((s) => s.updateBusinessSettings)
   const updatePos = useDataStore((s) => s.updatePosSettings)
   const updateUser = useDataStore((s) => s.updateUser)
+  const users = useDataStore((s) => s.users)
   const resetDemo = useDataStore((s) => s.resetDemo)
   const clearCart = useCartStore((s) => s.clearActive)
 
@@ -106,13 +120,26 @@ export default function Settings() {
 
         <TabsContent value="profile">
           {user && (
-            <ProfileForm
-              defaults={{ name: user.name, email: user.email, phone: user.phone, password: '' }}
-              onSave={(v) => {
-                updateUser(user.id, { name: v.name, email: v.email, phone: v.phone }, actor)
-                toast.success('Profile updated successfully.')
-              }}
-            />
+            <div className="space-y-6">
+              <ProfileForm
+                name={user.name}
+                email={user.email}
+                phone={user.phone}
+                onSave={(v) => {
+                  const taken = users.some(
+                    (u) => u.id !== user.id && u.email.toLowerCase() === v.email.trim().toLowerCase(),
+                  )
+                  if (taken) {
+                    toast.error('That email is already used by another account.')
+                    return false
+                  }
+                  updateUser(user.id, { name: v.name, email: v.email.trim(), phone: v.phone }, actor)
+                  toast.success('Profile updated successfully.')
+                  return true
+                }}
+              />
+              <ChangePasswordForm userId={user.id} />
+            </div>
           )}
         </TabsContent>
 
@@ -248,9 +275,14 @@ function PosSettingsForm({
   const [allowNegativeInventory, setAllowNegativeInventory] = useState(pos.allowNegativeInventory)
 
   const save = () => {
+    const rate = Number(defaultTaxRate)
+    if (defaultTaxRate.trim() === '' || !Number.isFinite(rate) || rate < 0 || rate > 100) {
+      toast.error('Default tax rate must be between 0 and 100.')
+      return
+    }
     onSave(
       {
-        defaultTaxRate: Number(defaultTaxRate),
+        defaultTaxRate: rate,
         receiptFooter,
         enableDiscounts,
         requireCustomer,
@@ -271,7 +303,10 @@ function PosSettingsForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Default tax rate (%)</Label>
-            <Input type="number" step="0.1" value={defaultTaxRate} onChange={(e) => setDefaultTaxRate(e.target.value)} />
+            <Input type="number" step="0.1" min={0} max={100} value={defaultTaxRate} onChange={(e) => setDefaultTaxRate(e.target.value)} />
+            <p className="text-xs text-muted-foreground">
+              Pre-filled when you add a product. Existing products keep their own rate.
+            </p>
           </div>
         </div>
         <div className="space-y-1.5">
@@ -310,22 +345,29 @@ function Toggle({
 }
 
 function ProfileForm({
-  defaults,
+  name,
+  email,
+  phone,
   onSave,
 }: {
-  defaults: ProfileValues
-  onSave: (v: ProfileValues) => void
+  name: string
+  email: string
+  phone: string
+  /** Returns false when the save was rejected (e.g. email in use). */
+  onSave: (v: ProfileValues) => boolean
 }) {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<ProfileValues>({ resolver: zodResolver(profileSchema), defaultValues: defaults })
+  } = useForm<ProfileValues>({ resolver: zodResolver(profileSchema), defaultValues: { name, email, phone } })
 
+  // Only reset when the saved values change — not on every parent render,
+  // which would wipe what the user is typing.
   useEffect(() => {
-    reset(defaults)
-  }, [defaults, reset])
+    reset({ name, email, phone })
+  }, [name, email, phone, reset])
 
   return (
     <Card>
@@ -334,28 +376,84 @@ function ProfileForm({
         <CardDescription>Update your personal account details.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSave)} className="space-y-4">
+        <form onSubmit={handleSubmit((v) => void onSave(v))} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Full name</Label>
-              <Input {...register('name')} />
+              <Input autoComplete="name" {...register('name')} />
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Phone</Label>
-              <Input {...register('phone')} />
+              <Input autoComplete="tel" {...register('phone')} />
+              {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-2">
               <Label>Email</Label>
-              <Input type="email" {...register('email')} />
+              <Input type="email" autoComplete="email" {...register('email')} />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label>New password</Label>
-              <Input type="password" placeholder="••••••••" {...register('password')} />
             </div>
           </div>
           <Button type="submit">Save changes</Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ChangePasswordForm({ userId }: { userId: string }) {
+  const { actor } = useAuth()
+  const stored = useDataStore((s) => s.passwords[userId])
+  const changePassword = useDataStore((s) => s.changePassword)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors },
+  } = useForm<PasswordValues>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: { current: '', next: '', confirm: '' },
+  })
+
+  const onSubmit = (v: PasswordValues) => {
+    if (v.current !== (stored ?? DEMO_PASSWORD)) {
+      setError('current', { message: 'Current password is incorrect' })
+      return
+    }
+    changePassword(userId, v.next, actor)
+    reset()
+    toast.success('Password changed. Use it next time you sign in.')
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Change password</CardTitle>
+        <CardDescription>
+          Demo accounts start with the password <span className="font-mono">password</span>.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label>Current password</Label>
+              <Input type="password" autoComplete="current-password" {...register('current')} />
+              {errors.current && <p className="text-xs text-destructive">{errors.current.message}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label>New password</Label>
+              <Input type="password" autoComplete="new-password" {...register('next')} />
+              {errors.next && <p className="text-xs text-destructive">{errors.next.message}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Confirm new password</Label>
+              <Input type="password" autoComplete="new-password" {...register('confirm')} />
+              {errors.confirm && <p className="text-xs text-destructive">{errors.confirm.message}</p>}
+            </div>
+          </div>
+          <Button type="submit">Update password</Button>
         </form>
       </CardContent>
     </Card>

@@ -20,6 +20,8 @@ import { RefundDialog } from '@/components/sales/RefundDialog'
 import { useDataStore } from '@/stores/dataStore'
 import { useAuth } from '@/hooks/useAuth'
 import { formatCurrency, formatDateTime } from '@/lib/format'
+import { refundedTotals } from '@/lib/sales'
+import { saleNet } from '@/lib/analytics'
 
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Cash',
@@ -76,6 +78,7 @@ export default function SaleDetails() {
   const canRefund =
     hasPermission('sales.refund') && (sale.status === 'completed' || sale.status === 'partially_refunded')
   const backTo = hasPermission('sales.view') ? '/sales' : '/my-sales'
+  const refunded = sale.status === 'completed' ? 0 : refundedTotals(sale).total
 
   return (
     <div className="space-y-6">
@@ -159,6 +162,18 @@ export default function SaleDetails() {
                 <span>Total</span>
                 <span>{formatCurrency(sale.total)}</span>
               </div>
+              {refunded > 0 && (
+                <>
+                  <div className="flex justify-between text-destructive">
+                    <span>Refunded</span>
+                    <span>-{formatCurrency(refunded)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold">
+                    <span>Net received</span>
+                    <span>{formatCurrency(saleNet(sale))}</span>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

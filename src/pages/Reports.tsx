@@ -46,6 +46,7 @@ import {
   topSellingProducts,
 } from '@/lib/analytics'
 import { isWithinInterval, parseISO, startOfDay, endOfDay, subDays } from 'date-fns'
+import { refundedTotals } from '@/lib/sales'
 
 const TABS = ['sales', 'inventory', 'products', 'sellers', 'expenses'] as const
 type Tab = (typeof TABS)[number]
@@ -65,17 +66,22 @@ export default function Reports() {
   const [from, setFrom] = useState(subDays(new Date(), 29).toISOString().slice(0, 10))
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10))
   const [storeFilter, setStoreFilter] = useState('all')
+  const [sellerFilter, setSellerFilter] = useState('all')
+  const [paymentFilter, setPaymentFilter] = useState('all')
+  const sellerOptions = users.filter((u) => u.role === 'seller' || u.role === 'admin')
 
   const rangedSales = useMemo(
     () =>
       sales.filter((s) => {
         if (storeFilter !== 'all' && s.storeId !== storeFilter) return false
+        if (sellerFilter !== 'all' && s.sellerId !== sellerFilter) return false
+        if (paymentFilter !== 'all' && s.paymentMethod !== paymentFilter) return false
         return isWithinInterval(parseISO(s.createdAt), {
           start: startOfDay(parseISO(from)),
           end: endOfDay(parseISO(to)),
         })
       }),
-    [sales, from, to, storeFilter],
+    [sales, from, to, storeFilter, sellerFilter, paymentFilter],
   )
 
   return (
@@ -118,6 +124,36 @@ export default function Reports() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Seller</Label>
+              <Select value={sellerFilter} onValueChange={setSellerFilter}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All sellers</SelectItem>
+                  {sellerOptions.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Payment</Label>
+              <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All payments</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="card">POS / Card</SelectItem>
+                  <SelectItem value="transfer">Bank Transfer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
 
@@ -148,8 +184,17 @@ function SalesReport({ sales, from, to }: { sales: Sale[]; from: string; to: str
   const active = sales.filter(isActiveSale)
   const gross = active.reduce((s, x) => s + x.subtotal, 0)
   const discounts = active.reduce((s, x) => s + x.discountAmount, 0)
-  const tax = active.reduce((s, x) => s + x.tax, 0)
-  const net = gross - discounts
+  // Partial refunds (fully refunded sales are already excluded from `active`)
+  const returned = active.reduce(
+    (acc, x) => {
+      if (x.status !== 'partially_refunded') return acc
+      const r = refundedTotals(x)
+      return { net: acc.net + r.net, tax: acc.tax + r.tax }
+    },
+    { net: 0, tax: 0 },
+  )
+  const tax = active.reduce((s, x) => s + x.tax, 0) - returned.tax
+  const net = gross - discounts - returned.net
   const collected = active.reduce((s, x) => s + saleNet(x), 0)
   const days = Math.max(1, differenceInCalendarDays(parseISO(to), parseISO(from)) + 1)
   const series = useMemo(() => revenueByDay(sales, days, parseISO(to)), [sales, days, to])
@@ -161,7 +206,7 @@ function SalesReport({ sales, from, to }: { sales: Sale[]; from: string; to: str
         <StatCard title="Gross sales" value={formatCurrency(gross, { decimals: false })} icon={Banknote} />
         <StatCard title="Discounts" value={formatCurrency(discounts, { decimals: false })} icon={Percent} iconClassName="bg-amber-100 text-amber-700" />
         <StatCard title="Tax" value={formatCurrency(tax, { decimals: false })} icon={Receipt} iconClassName="bg-violet-100 text-violet-700" />
-        <StatCard title="Net sales" value={formatCurrency(net, { decimals: false })} icon={TrendingUp} iconClassName="bg-emerald-100 text-emerald-700" />
+        <StatCard title="Net sales" value={formatCurrency(net, { decimals: false })} icon={TrendingUp} iconClassName="bg-emerald-100 text-emerald-700" hint={returned.net > 0 ? `after ${formatCurrency(returned.net, { decimals: false })} returns` : 'after discounts'} />
         <StatCard title="Transactions" value={formatNumber(active.length)} icon={Receipt} iconClassName="bg-blue-100 text-blue-700" />
         <StatCard title="Avg. transaction" value={formatCurrency(active.length ? collected / active.length : 0, { decimals: false })} icon={Coins} iconClassName="bg-cyan-100 text-cyan-700" />
       </div>

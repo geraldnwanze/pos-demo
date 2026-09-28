@@ -31,8 +31,10 @@ interface CartState {
   // active-cart mutations
   addItem: (line: Omit<CartLine, 'quantity'>, allowNegative: boolean) => 'added' | 'incremented' | 'out_of_stock'
   removeItem: (productId: string) => void
-  setQuantity: (productId: string, quantity: number, allowNegative: boolean) => void
-  increment: (productId: string, allowNegative: boolean) => void
+  /** `maxQuantity` is the live stock limit (use Infinity when overselling is allowed). */
+  setQuantity: (productId: string, quantity: number, maxQuantity: number) => void
+  /** Returns false when the live stock limit is already reached. */
+  increment: (productId: string, maxQuantity: number) => boolean
   decrement: (productId: string) => void
   clearActive: () => void
   setCustomer: (id: string | null) => void
@@ -79,7 +81,9 @@ export const useCartStore = create<CartState>()(
             updateActive((c) => ({
               ...c,
               lines: c.lines.map((l) =>
-                l.productId === line.productId ? { ...l, quantity: l.quantity + 1 } : l,
+                l.productId === line.productId
+                  ? { ...l, quantity: l.quantity + 1, stock: line.stock }
+                  : l,
               ),
             }))
             return 'incremented'
@@ -92,28 +96,30 @@ export const useCartStore = create<CartState>()(
         removeItem: (productId) =>
           updateActive((c) => ({ ...c, lines: c.lines.filter((l) => l.productId !== productId) })),
 
-        setQuantity: (productId, quantity, allowNegative) =>
+        setQuantity: (productId, quantity, maxQuantity) =>
           updateActive((c) => ({
             ...c,
             lines: c.lines
-              .map((l) => {
-                if (l.productId !== productId) return l
-                let q = Math.max(0, Math.floor(quantity))
-                if (!allowNegative) q = Math.min(q, l.stock)
-                return { ...l, quantity: q }
-              })
+              .map((l) =>
+                l.productId === productId
+                  ? { ...l, quantity: Math.min(Math.max(0, Math.floor(quantity)), maxQuantity) }
+                  : l,
+              )
               .filter((l) => l.quantity > 0),
           })),
 
-        increment: (productId, allowNegative) =>
+        increment: (productId, maxQuantity) => {
+          const active = get().carts.find((c) => c.id === get().activeId) ?? get().carts[0]
+          const line = active.lines.find((l) => l.productId === productId)
+          if (!line || line.quantity >= maxQuantity) return false
           updateActive((c) => ({
             ...c,
-            lines: c.lines.map((l) => {
-              if (l.productId !== productId) return l
-              if (!allowNegative && l.quantity >= l.stock) return l
-              return { ...l, quantity: l.quantity + 1 }
-            }),
-          })),
+            lines: c.lines.map((l) =>
+              l.productId === productId ? { ...l, quantity: l.quantity + 1 } : l,
+            ),
+          }))
+          return true
+        },
 
         decrement: (productId) =>
           updateActive((c) => ({

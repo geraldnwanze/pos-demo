@@ -1,6 +1,6 @@
 import { subDays } from 'date-fns'
 import type { Expense, ExpenseCategory, PaymentMethod } from '@/types'
-import { NOW } from './generate'
+import { NOW } from './clock'
 
 interface Seed {
   title: string

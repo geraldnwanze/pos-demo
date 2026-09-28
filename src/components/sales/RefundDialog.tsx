@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { useDataStore } from '@/stores/dataStore'
 import { useAuth } from '@/hooks/useAuth'
 import { formatCurrency } from '@/lib/format'
+import { money, refundBreakdown, refundedTotals } from '@/lib/sales'
 import type { Sale } from '@/types'
 
 interface RefundDialogProps {
@@ -47,10 +48,17 @@ export function RefundDialog({ open, onOpenChange, sale }: RefundDialogProps) {
     }
   }, [open])
 
-  const refundTotal = refundable.reduce(
-    (sum, i) => sum + (selected[i.productId] ?? 0) * i.unitPrice,
-    0,
-  )
+  // Same rule the store applies: discount-and-tax aware, and a refund of
+  // everything left returns exactly the remaining balance of the sale.
+  const refundsEverything = refundable.every((i) => (selected[i.productId] ?? 0) >= i.remaining)
+  const refundTotal = refundsEverything
+    ? money(sale.total - refundedTotals(sale).total)
+    : money(
+        refundable.reduce(
+          (sum, i) => sum + refundBreakdown(sale, i, selected[i.productId] ?? 0).total,
+          0,
+        ),
+      )
   const anySelected = Object.values(selected).some((q) => q > 0)
 
   const submit = () => {
@@ -107,7 +115,8 @@ export function RefundDialog({ open, onOpenChange, sale }: RefundDialogProps) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{item.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatCurrency(item.unitPrice)} · {item.remaining} refundable
+                    {formatCurrency(refundBreakdown(sale, item, 1).total)} each paid ·{' '}
+                    {item.remaining} refundable
                   </p>
                 </div>
                 <Input
@@ -138,7 +147,10 @@ export function RefundDialog({ open, onOpenChange, sale }: RefundDialogProps) {
         </div>
 
         <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
-          <span className="text-sm text-muted-foreground">Refund amount</span>
+          <span className="text-sm text-muted-foreground">
+            Refund amount
+            <span className="block text-[11px]">incl. tax, after the sale discount</span>
+          </span>
           <span className="text-lg font-bold">{formatCurrency(refundTotal)}</span>
         </div>
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Plus, MoreHorizontal, Pencil, Power, KeyRound, Users } from 'lucide-react'
+import { Plus, MoreHorizontal, Pencil, Power, KeyRound, Users, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable } from '@/components/shared/DataTable'
@@ -15,9 +15,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { UserFormDialog } from '@/components/users/UserFormDialog'
+import { SellerDetailsSheet } from '@/components/users/SellerDetailsSheet'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useDataStore } from '@/stores/dataStore'
 import { useAuth } from '@/hooks/useAuth'
+import { DEMO_PASSWORD } from '@/services/auth'
 import { useSimulatedLoading } from '@/hooks/useSimulatedLoading'
 import { formatCurrency } from '@/lib/format'
 import { isActiveSale, monthlyRevenue, saleNet, todaySales } from '@/lib/analytics'
@@ -34,10 +36,14 @@ export default function Sellers() {
   const stores = useDataStore((s) => s.stores)
   const sales = useDataStore((s) => s.sales)
   const updateUser = useDataStore((s) => s.updateUser)
+  const resetPassword = useDataStore((s) => s.resetPassword)
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<User | undefined>()
   const [toggling, setToggling] = useState<User | null>(null)
+  const [viewingId, setViewingId] = useState<string | null>(null)
+  // Look up by id so the drawer reflects edits made while it's open
+  const viewing = users.find((u) => u.id === viewingId) ?? null
 
   const sellers = useMemo(() => users.filter((u) => u.role === 'seller'), [users])
   const storeName = (id: string | null) => stores.find((s) => s.id === id)?.name ?? 'HQ'
@@ -108,6 +114,9 @@ export default function Sellers() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setViewingId(row.original.id)}>
+                  <Eye className="h-4 w-4" /> View
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
                     setEditing(row.original)
@@ -116,7 +125,12 @@ export default function Sellers() {
                 >
                   <Pencil className="h-4 w-4" /> Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toast.success('Password reset link sent.')}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    resetPassword(row.original.id, actor)
+                    toast.success(`Password for ${row.original.name} reset to "${DEMO_PASSWORD}".`)
+                  }}
+                >
                   <KeyRound className="h-4 w-4" /> Reset password
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setToggling(row.original)}>
@@ -158,9 +172,20 @@ export default function Sellers() {
           data={sellers}
           searchKey="name"
           searchPlaceholder="Search sellers…"
+          onRowClick={(u) => setViewingId(u.id)}
           emptyState={<EmptyState icon={Users} title="No sellers yet" description="Add your first seller." />}
         />
       )}
+
+      <SellerDetailsSheet
+        seller={viewing}
+        onOpenChange={(open) => !open && setViewingId(null)}
+        onEdit={(u) => {
+          setViewingId(null)
+          setEditing(u)
+          setFormOpen(true)
+        }}
+      />
 
       <UserFormDialog
         open={formOpen}
